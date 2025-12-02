@@ -2,6 +2,7 @@
 using BusBookingSystem.Application.DTOs;
 using BusBookingSystem.Core.Entities;
 using BusBookingSystem.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BusBookingSystem.Application.Services
 {
@@ -31,6 +32,24 @@ namespace BusBookingSystem.Application.Services
             
             // 3. Değişiklikleri kaydet
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<BusDto>> GetAllBusesAsync()
+        {
+            // Veritabanından tüm otobüsleri çek
+            var buses = await _context.Buses
+                .OrderBy(b => b.CreatedDate)
+                .ToListAsync();
+
+            // Entity'leri DTO'ya çevir (Mapping)
+            return buses.Select(bus => new BusDto
+            {
+                Id = bus.Id,
+                PlateNumber = bus.PlateNumber,
+                Brand = bus.Brand,
+                TotalSeatCount = bus.TotalSeatCount,
+                CreatedDate = bus.CreatedDate
+            });
         }
     }
 }

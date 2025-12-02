@@ -17,6 +17,16 @@ namespace BusBookingSystem.API.Controllers
             _busService = busService;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllBuses()
+        {
+            // Servisten tüm otobüsleri al
+            var buses = await _busService.GetAllBusesAsync();
+            
+            // Başarılı (200 OK) ile listeyi döndür
+            return Ok(buses);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateBus([FromBody] CreateBusDto request)
         {

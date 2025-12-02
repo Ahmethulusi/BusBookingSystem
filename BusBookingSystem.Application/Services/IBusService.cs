@@ -8,6 +8,7 @@ namespace BusBookingSystem.Application.Services
         // Geriye hiçbir şey dönmesin (void) veya oluşturulan ID dönsün.
         Task AddBusAsync(CreateBusDto busDto);
         
-        // Şimdilik sadece ekleme yapalım, listelemeyi sonra ekleriz.
+        // Tüm otobüsleri getir
+        Task<IEnumerable<BusDto>> GetAllBusesAsync();
     }
 }
