@@ -7,6 +7,7 @@ namespace BusBookingSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    
     public class TripsController : ControllerBase
     {
         private readonly ITripService _tripService;
