@@ -24,9 +24,49 @@ This system is designed to handle the core operations of a bus ticketing platfor
 ## 🏗 Architecture
 The solution follows the **Clean Architecture (Onion Architecture)** pattern to ensure separation of concerns and testability.
 
-```text
+
 BusBookingSystem.sln
 ├── 1. Core (Domain)           # Entities, Enums, Interfaces (No dependencies)
 ├── 2. Infrastructure          # EF Core, Database Context, Migrations
 ├── 3. Application             # Business Logic, DTOs, Services, Validators
 └── 4. API (Presentation)      # Controllers, Middleware, Entry Point
+
+## 🤝 Ekip Çalışması ve Git Kuralları
+
+
+### 1. Dallanma Kuralları (Branching)
+
+* **`main`:** Canlı (Production) kod. Buraya doğrudan `push` **YASAKTIR**.
+* **`develop`:** Ana geliştirme ve entegrasyon dalıdır. Tüm PR'lar bu dalı hedefler.
+* **`feature/[görev-adı]`:** Bireysel görev ve özellik geliştirme dallarıdır.
+
+### 2. Günlük İş Akışı
+
+Yeni bir göreve başlarken ve bitirirken şu adımları izleyin:
+
+1.  **Güncel Kodu Çek:** Her zaman `develop` dalından başlayın ve güncelleyin:
+    ```bash
+    git checkout develop
+    git pull origin develop
+    ```
+2.  **Yeni Dal Aç:** Görevinize özel bir dal açın:
+    ```bash
+    git checkout -b feature/otobus-ekleme
+    ```
+3.  **Kaydet (Commit):** Çalışmalarınızı düzenli olarak kaydedin:
+    ```bash
+    git add .
+    git commit -m "feat: [Yapılan işin özeti]"
+    ```
+4.  **Paylaş (Push):** Kodu kendi dalınıza yükleyin:
+    ```bash
+    git push -u origin feature/otobus-ekleme
+    ```
+5.  **Birleştirme (PR):** İşiniz bittiğinde GitHub üzerinden **`develop`** dalına **Pull Request** açın.
+
+### 3. Veritabanı (Migration) Kuralları ⚠️
+
+Veritabanı şeması değişikliklerinde (Migration), çakışmayı önlemek için disiplin şarttır:
+
+* **Migration Oluşturma:** `dotnet ef migrations add [İsim]` komutu **YALNIZCA DB Master** tarafından çalıştırılır.
+* **Senkronizasyon:** DB Master `develop`'a birleştirme yaptıktan sonra, tüm ekip üyeleri çalışmaya devam etmeden önce mutlaka `git pull` yapmalıdır.
