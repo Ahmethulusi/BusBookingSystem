@@ -1,5 +1,5 @@
 // BusBookingSystem.API/Controllers/TripsController.cs
-using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.DTOs.Request;
 using BusBookingSystem.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 

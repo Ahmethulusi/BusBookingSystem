@@ -20,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<BusBookingSystem.Application.Services.IBusService, BusBookingSystem.Application.Services.BusService>();
 builder.Services.AddScoped<BusBookingSystem.Application.Services.ITripService, BusBookingSystem.Application.Services.TripService>();
 builder.Services.AddScoped<BusBookingSystem.Application.Services.IPassengerService, BusBookingSystem.Application.Services.PassengerService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ILocationService, BusBookingSystem.Application.Services.LocationService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -36,5 +37,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+// Seed Data - Uygulama başlarken şehirleri ekle
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<AppDbContext>();
+    await BusBookingSystem.Infrastructure.Data.DbSeeder.SeedCitiesAsync(context);
+}
 
 app.Run();
