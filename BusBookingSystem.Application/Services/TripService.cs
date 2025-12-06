@@ -1,5 +1,6 @@
 // BusBookingSystem.Application/Services/TripService.cs
-using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.DTOs.Request;
+using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Core.Entities;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -24,28 +25,70 @@ namespace BusBookingSystem.Application.Services
                 throw new ArgumentException($"Bus with ID {tripDto.BusId} not found.");
             }
 
-            // 2. DTO'yu Entity'ye çevir
+            // 2. Origin City'nin var olup olmadığını kontrol et
+            var originCityExists = await _context.Cities.AnyAsync(c => c.Id == tripDto.OriginCityId);
+            if (!originCityExists)
+            {
+                throw new ArgumentException($"Origin City with ID {tripDto.OriginCityId} not found.");
+            }
+
+            // 3. Destination City'nin var olup olmadığını kontrol et
+            var destinationCityExists = await _context.Cities.AnyAsync(c => c.Id == tripDto.DestinationCityId);
+            if (!destinationCityExists)
+            {
+                throw new ArgumentException($"Destination City with ID {tripDto.DestinationCityId} not found.");
+            }
+
+            // 4. Origin District kontrolü (eğer verilmişse)
+            if (tripDto.OriginDistrictId.HasValue)
+            {
+                var originDistrictExists = await _context.Districts
+                    .AnyAsync(d => d.Id == tripDto.OriginDistrictId.Value && d.CityId == tripDto.OriginCityId);
+                if (!originDistrictExists)
+                {
+                    throw new ArgumentException($"Origin District with ID {tripDto.OriginDistrictId} not found in City {tripDto.OriginCityId}.");
+                }
+            }
+
+            // 5. Destination District kontrolü (eğer verilmişse)
+            if (tripDto.DestinationDistrictId.HasValue)
+            {
+                var destinationDistrictExists = await _context.Districts
+                    .AnyAsync(d => d.Id == tripDto.DestinationDistrictId.Value && d.CityId == tripDto.DestinationCityId);
+                if (!destinationDistrictExists)
+                {
+                    throw new ArgumentException($"Destination District with ID {tripDto.DestinationDistrictId} not found in City {tripDto.DestinationCityId}.");
+                }
+            }
+
+            // 6. DTO'yu Entity'ye çevir
             var newTrip = new Trip
             {
                 BusId = tripDto.BusId,
-                Origin = tripDto.Origin,
-                Destination = tripDto.Destination,
+                OriginCityId = tripDto.OriginCityId,
+                OriginDistrictId = tripDto.OriginDistrictId,
+                DestinationCityId = tripDto.DestinationCityId,
+                DestinationDistrictId = tripDto.DestinationDistrictId,
                 DepartureDate = tripDto.DepartureDate,
                 Price = tripDto.Price,
                 // CreatedDate otomatik atanıyor (BaseEntity'den)
             };
 
-            // 3. Veritabanına ekle
+            // 7. Veritabanına ekle
             await _context.Trips.AddAsync(newTrip);
 
-            // 4. Değişiklikleri kaydet
+            // 8. Değişiklikleri kaydet
             await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
-            // Veritabanından tüm seferleri çek
+            // Veritabanından tüm seferleri çek (City ve District bilgileriyle birlikte)
             var trips = await _context.Trips
+                .Include(t => t.OriginCity)
+                .Include(t => t.OriginDistrict)
+                .Include(t => t.DestinationCity)
+                .Include(t => t.DestinationDistrict)
                 .OrderBy(t => t.DepartureDate)
                 .ToListAsync();
 
@@ -54,8 +97,14 @@ namespace BusBookingSystem.Application.Services
             {
                 Id = trip.Id,
                 BusId = trip.BusId,
-                Origin = trip.Origin,
-                Destination = trip.Destination,
+                OriginCityId = trip.OriginCityId,
+                OriginCityName = trip.OriginCity.Name,
+                OriginDistrictId = trip.OriginDistrictId,
+                OriginDistrictName = trip.OriginDistrict?.Name,
+                DestinationCityId = trip.DestinationCityId,
+                DestinationCityName = trip.DestinationCity.Name,
+                DestinationDistrictId = trip.DestinationDistrictId,
+                DestinationDistrictName = trip.DestinationDistrict?.Name,
                 DepartureDate = trip.DepartureDate,
                 Price = trip.Price,
                 CreatedDate = trip.CreatedDate

@@ -16,6 +16,8 @@ namespace BusBookingSystem.Infrastructure.Data
         public DbSet<Bus> Buses { get; set; }
         public DbSet<Trip> Trips { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<City> Cities { get; set; }
+        public DbSet<District> Districts { get; set; }
         public DbSet<Passenger> Passengers { get; set; }
 
         // Veritabanı oluşurken çalışacak özel ayarlar
@@ -58,6 +60,39 @@ namespace BusBookingSystem.Infrastructure.Data
             modelBuilder.Entity<Ticket>()
                 .HasIndex(t => new { t.TripId, t.SeatNumber })
                 .IsUnique();
+
+            // City - District relationship (One-to-Many)
+            modelBuilder.Entity<District>()
+                .HasOne(d => d.City)
+                .WithMany(c => c.Districts)
+                .HasForeignKey(d => d.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Trip - City relationships (Origin)
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.OriginCity)
+                .WithMany()
+                .HasForeignKey(t => t.OriginCityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.OriginDistrict)
+                .WithMany()
+                .HasForeignKey(t => t.OriginDistrictId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Trip - City relationships (Destination)
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.DestinationCity)
+                .WithMany()
+                .HasForeignKey(t => t.DestinationCityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.DestinationDistrict)
+                .WithMany()
+                .HasForeignKey(t => t.DestinationDistrictId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);
         }

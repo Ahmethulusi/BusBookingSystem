@@ -1,11 +1,18 @@
-// BusBookingSystem.Application/DTOs/CreateTripDto.cs
-namespace BusBookingSystem.Application.DTOs
+// BusBookingSystem.Application/DTOs/Request/CreateTripDto.cs
+namespace BusBookingSystem.Application.DTOs.Request
 {
     public class CreateTripDto
     {
         public int BusId { get; set; }
-        public string Origin { get; set; } = string.Empty;
-        public string Destination { get; set; } = string.Empty;
+        
+        // Origin (Kalkış) bilgileri
+        public int OriginCityId { get; set; }
+        public int? OriginDistrictId { get; set; } // Nullable - İlçe opsiyonel
+        
+        // Destination (Varış) bilgileri
+        public int DestinationCityId { get; set; }
+        public int? DestinationDistrictId { get; set; } // Nullable - İlçe opsiyonel
+        
         public DateTime DepartureDate { get; set; }
         public decimal Price { get; set; }
     }
