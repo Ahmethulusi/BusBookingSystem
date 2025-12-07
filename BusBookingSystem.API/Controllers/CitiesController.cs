@@ -1,11 +1,14 @@
 // BusBookingSystem.API/Controllers/CitiesController.cs
+using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BusBookingSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CitiesController : ControllerBase
     {
         private readonly ILocationService _locationService;
@@ -18,8 +21,15 @@ namespace BusBookingSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllCities()
         {
-            var cities = await _locationService.GetAllCitiesAsync();
-            return Ok(cities);
+            try
+            {
+                var cities = await _locationService.GetAllCitiesAsync();
+                return Ok(Response<IEnumerable<CityDto>>.Successful(cities));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<CityDto>>.Fail(ex.Message));
+            }
         }
 
         [HttpGet("{cityId}/districts")]
@@ -28,15 +38,15 @@ namespace BusBookingSystem.API.Controllers
             try
             {
                 var districts = await _locationService.GetDistrictsByCityIdAsync(cityId);
-                return Ok(districts);
+                return Ok(Response<IEnumerable<DistrictDto>>.Successful(districts));
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Response<IEnumerable<DistrictDto>>.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "İlçeler getirilirken bir hata oluştu.", error = ex.Message });
+                return BadRequest(Response<IEnumerable<DistrictDto>>.Fail(ex.Message));
             }
         }
     }

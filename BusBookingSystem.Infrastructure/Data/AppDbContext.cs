@@ -19,6 +19,7 @@ namespace BusBookingSystem.Infrastructure.Data
         public DbSet<City> Cities { get; set; }
         public DbSet<District> Districts { get; set; }
         public DbSet<Passenger> Passengers { get; set; }
+        public DbSet<User> Users { get; set; }
 
         // Veritabanı oluşurken çalışacak özel ayarlar
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -59,6 +60,11 @@ namespace BusBookingSystem.Infrastructure.Data
             // Ticket unique constraint (bir seferde aynı koltuk sadece bir kez rezerve edilebilir)
             modelBuilder.Entity<Ticket>()
                 .HasIndex(t => new { t.TripId, t.SeatNumber })
+                .IsUnique();
+
+            // User unique constraint
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
                 .IsUnique();
 
             // City - District relationship (One-to-Many)
