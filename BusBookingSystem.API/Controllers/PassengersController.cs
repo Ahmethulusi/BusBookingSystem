@@ -1,11 +1,14 @@
 using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BusBookingSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PassengersController : ControllerBase
     {
         private readonly IPassengerService _passengerService;
@@ -18,52 +21,66 @@ namespace BusBookingSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllPassengers()
         {
-            var passengers = await _passengerService.GetAllPassengersAsync();
-            return Ok(passengers);
+            try
+            {
+                var passengers = await _passengerService.GetAllPassengersAsync();
+                return Ok(Response<IEnumerable<PassengerDto>>.Successful(passengers));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<PassengerDto>>.Fail(ex.Message));
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPassengerById(int id)
         {
-            var passenger = await _passengerService.GetPassengerByIdAsync(id);
-            if (passenger == null)
-                return NotFound(new { message = "Yolcu bulunamadı" });
+            try
+            {
+                var passenger = await _passengerService.GetPassengerByIdAsync(id);
+                if (passenger == null)
+                    return NotFound(Response<PassengerDto>.Fail("Yolcu bulunamadı"));
 
-            return Ok(passenger);
+                return Ok(Response<PassengerDto>.Successful(passenger));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<PassengerDto>.Fail(ex.Message));
+            }
         }
 
         [HttpGet("tc/{tcNo}")]
         public async Task<IActionResult> GetPassengerByTcNo(string tcNo)
         {
-            var passenger = await _passengerService.GetPassengerByTcNoAsync(tcNo);
-            if (passenger == null)
-                return NotFound(new { message = "Belirtilen TC kimlik numarası ile yolcu bulunamadı" });
+            try
+            {
+                var passenger = await _passengerService.GetPassengerByTcNoAsync(tcNo);
+                if (passenger == null)
+                    return NotFound(Response<PassengerDto>.Fail("Belirtilen TC kimlik numarası ile yolcu bulunamadı"));
 
-            return Ok(passenger);
+                return Ok(Response<PassengerDto>.Successful(passenger));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<PassengerDto>.Fail(ex.Message));
+            }
         }
-
-
 
         [HttpPost]
         public async Task<IActionResult> CreatePassenger([FromBody] CreatePassengerDto request)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
                 var passenger = await _passengerService.AddPassengerAsync(request);
-                return CreatedAtAction(nameof(GetPassengerById), new { id = passenger.Id }, passenger);
+                return Ok(Response<PassengerDto>.Successful(passenger));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Response<PassengerDto>.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Yolcu oluşturulurken bir hata oluştu.", error = ex.Message });
+                return BadRequest(Response<PassengerDto>.Fail(ex.Message));
             }
         }
 
@@ -72,24 +89,19 @@ namespace BusBookingSystem.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
                 var updatedPassenger = await _passengerService.UpdatePassengerAsync(id, request);
                 if (updatedPassenger == null)
-                    return NotFound(new { message = "Yolcu bulunamadı" });
+                    return NotFound(Response<PassengerDto>.Fail("Yolcu bulunamadı"));
 
-                return Ok(updatedPassenger);
+                return Ok(Response<PassengerDto>.Successful(updatedPassenger));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Response<PassengerDto>.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Yolcu güncellenirken bir hata oluştu.", error = ex.Message });
+                return BadRequest(Response<PassengerDto>.Fail(ex.Message));
             }
         }
 
@@ -100,34 +112,42 @@ namespace BusBookingSystem.API.Controllers
             {
                 var deleted = await _passengerService.DeletePassengerAsync(id);
                 if (!deleted)
-                    return NotFound(new { message = "Yolcu bulunamadı" });
+                    return NotFound(Response<bool>.Fail("Yolcu bulunamadı"));
 
-                return Ok(new { message = "Yolcu başarıyla silindi" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                return Ok(Response<bool>.Successful(true));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Yolcu silinirken bir hata oluştu.", error = ex.Message });
+                return BadRequest(Response<bool>.Fail(ex.Message));
             }
         }
 
         [HttpGet("exists/tc/{tcNo}")]
         public async Task<IActionResult> CheckPassengerExistsByTcNo(string tcNo)
         {
-            var exists = await _passengerService.PassengerExistsByTcNoAsync(tcNo);
-            return Ok(new { exists });
+            try
+            {
+                var exists = await _passengerService.PassengerExistsByTcNoAsync(tcNo);
+                return Ok(Response<bool>.Successful(exists));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
         }
 
         [HttpGet("exists/email/{email}")]
         public async Task<IActionResult> CheckPassengerExistsByEmail(string email)
         {
-            var exists = await _passengerService.PassengerExistsByEmailAsync(email);
-            return Ok(new { exists });
+            try
+            {
+                var exists = await _passengerService.PassengerExistsByEmailAsync(email);
+                return Ok(Response<bool>.Successful(exists));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
         }
-
-
     }
 }

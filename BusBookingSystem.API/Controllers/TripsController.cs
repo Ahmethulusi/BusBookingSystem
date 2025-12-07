@@ -1,13 +1,15 @@
 // BusBookingSystem.API/Controllers/TripsController.cs
 using BusBookingSystem.Application.DTOs.Request;
+using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BusBookingSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    
+    [Authorize]
     public class TripsController : ControllerBase
     {
         private readonly ITripService _tripService;
@@ -20,11 +22,15 @@ namespace BusBookingSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllTrips()
         {
-            // Servisten tüm seferleri al
-            var trips = await _tripService.GetAllTripsAsync();
-
-            // Başarılı (200 OK) ile listeyi döndür
-            return Ok(trips);
+            try
+            {
+                var trips = await _tripService.GetAllTripsAsync();
+                return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<TripDto>>.Fail(ex.Message));
+            }
         }
 
         [HttpPost]
@@ -32,21 +38,16 @@ namespace BusBookingSystem.API.Controllers
         {
             try
             {
-                // Servise işi devret
                 await _tripService.AddTripAsync(request);
-
-                // Başarılı (200 OK) dön
-                return Ok(new { message = "Sefer başarıyla oluşturuldu!" });
+                return Ok(Response<bool>.Successful(true));
             }
             catch (ArgumentException ex)
             {
-                // Bus bulunamadı hatası
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Response<bool>.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                // Diğer hatalar
-                return StatusCode(500, new { message = "Sefer oluşturulurken bir hata oluştu.", error = ex.Message });
+                return BadRequest(Response<bool>.Fail(ex.Message));
             }
         }
     }
