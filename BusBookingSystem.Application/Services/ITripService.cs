@@ -6,7 +6,7 @@ namespace BusBookingSystem.Application.Services
 {
     public interface ITripService
     {
-        Task AddTripAsync(CreateTripDto tripDto);
+        Task<TripDto> AddTripAsync(CreateTripDto tripDto);
         Task<IEnumerable<TripDto>> GetAllTripsAsync();
     }
 }

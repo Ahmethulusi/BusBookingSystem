@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace BusBookingSystem.Application.Services
+namespace BusBookingSystem.Application.Services.Impl
 {
     public class AuthService : IAuthService
     {

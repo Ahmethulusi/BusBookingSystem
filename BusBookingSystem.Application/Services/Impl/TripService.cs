@@ -1,11 +1,12 @@
 // BusBookingSystem.Application/Services/TripService.cs
 using BusBookingSystem.Application.DTOs.Request;
 using BusBookingSystem.Application.DTOs.Response;
+using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Core.Entities;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace BusBookingSystem.Application.Services
+namespace BusBookingSystem.Application.Services.Impl
 {
     public class TripService : ITripService
     {
@@ -16,7 +17,7 @@ namespace BusBookingSystem.Application.Services
             _context = context;
         }
 
-        public async Task AddTripAsync(CreateTripDto tripDto)
+        public async Task<TripDto> AddTripAsync(CreateTripDto tripDto)
         {
             // 1. Bus'ın var olup olmadığını kontrol et
             var busExists = await _context.Buses.AnyAsync(b => b.Id == tripDto.BusId);
@@ -79,11 +80,22 @@ namespace BusBookingSystem.Application.Services
 
             // 8. Değişiklikleri kaydet
             await _context.SaveChangesAsync();
+
+            // 9. Oluşturulan seferi ilişkili verilerle birlikte getir
+            var createdTrip = await _context.Trips
+                .Include(t => t.OriginCity)
+                .Include(t => t.OriginDistrict)
+                .Include(t => t.DestinationCity)
+                .Include(t => t.DestinationDistrict)
+                .FirstOrDefaultAsync(t => t.Id == newTrip.Id);
+
+            // 10. DTO'ya çevir ve döndür
+            return createdTrip!.ToDto();
         }
 
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
-            // Veritabanından tüm seferleri çek (City ve District bilgileriyle birlikte)
+
             var trips = await _context.Trips
                 .Include(t => t.OriginCity)
                 .Include(t => t.OriginDistrict)
@@ -92,23 +104,7 @@ namespace BusBookingSystem.Application.Services
                 .OrderBy(t => t.DepartureDate)
                 .ToListAsync();
 
-            // Entity'leri DTO'ya çevir (Mapping)
-            return trips.Select(trip => new TripDto
-            {
-                Id = trip.Id,
-                BusId = trip.BusId,
-                OriginCityId = trip.OriginCityId,
-                OriginCityName = trip.OriginCity.Name,
-                OriginDistrictId = trip.OriginDistrictId,
-                OriginDistrictName = trip.OriginDistrict?.Name,
-                DestinationCityId = trip.DestinationCityId,
-                DestinationCityName = trip.DestinationCity.Name,
-                DestinationDistrictId = trip.DestinationDistrictId,
-                DestinationDistrictName = trip.DestinationDistrict?.Name,
-                DepartureDate = trip.DepartureDate,
-                Price = trip.Price,
-                CreatedDate = trip.CreatedDate
-            });
+            return trips.ToDto();
         }
     }
 }

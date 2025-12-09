@@ -3,7 +3,7 @@ using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace BusBookingSystem.Application.Services
+namespace BusBookingSystem.Application.Services.Impl
 {
     public class LocationService : ILocationService
     {

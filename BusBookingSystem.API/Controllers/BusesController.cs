@@ -38,12 +38,12 @@ namespace BusBookingSystem.API.Controllers
         {
             try
             {
-                await _busService.AddBusAsync(request);
-                return Ok(Response<bool>.Successful(true));
+                var createdBus = await _busService.AddBusAsync(request);
+                return Ok(Response<BusDto>.Successful(createdBus, "Otobüs başarıyla oluşturulmuştur"));
             }
             catch (Exception ex)
             {
-                return BadRequest(Response<bool>.Fail(ex.Message));
+                return BadRequest(Response<BusDto>.Fail(ex.Message));
             }
         }
     }

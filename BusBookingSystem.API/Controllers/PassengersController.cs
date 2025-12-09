@@ -72,7 +72,7 @@ namespace BusBookingSystem.API.Controllers
             try
             {
                 var passenger = await _passengerService.AddPassengerAsync(request);
-                return Ok(Response<PassengerDto>.Successful(passenger));
+                return Ok(Response<PassengerDto>.Successful(passenger, "Yolcu başarıyla oluşturulmuştur"));
             }
             catch (InvalidOperationException ex)
             {
@@ -93,7 +93,7 @@ namespace BusBookingSystem.API.Controllers
                 if (updatedPassenger == null)
                     return NotFound(Response<PassengerDto>.Fail("Yolcu bulunamadı"));
 
-                return Ok(Response<PassengerDto>.Successful(updatedPassenger));
+                return Ok(Response<PassengerDto>.Successful(updatedPassenger, "Yolcu bilgileri başarıyla güncellenmiştir"));
             }
             catch (InvalidOperationException ex)
             {
@@ -114,7 +114,7 @@ namespace BusBookingSystem.API.Controllers
                 if (!deleted)
                     return NotFound(Response<bool>.Fail("Yolcu bulunamadı"));
 
-                return Ok(Response<bool>.Successful(true));
+                return Ok(Response<bool>.Successful(true, $"{id} ID'li yolcu başarıyla silinmiştir"));
             }
             catch (Exception ex)
             {

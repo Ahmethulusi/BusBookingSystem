@@ -42,11 +42,12 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // 3. SERVICES
-builder.Services.AddScoped<BusBookingSystem.Application.Services.IBusService, BusBookingSystem.Application.Services.BusService>();
-builder.Services.AddScoped<BusBookingSystem.Application.Services.ITripService, BusBookingSystem.Application.Services.TripService>();
-builder.Services.AddScoped<BusBookingSystem.Application.Services.IPassengerService, BusBookingSystem.Application.Services.PassengerService>();
-builder.Services.AddScoped<BusBookingSystem.Application.Services.ILocationService, BusBookingSystem.Application.Services.LocationService>();
-builder.Services.AddScoped<BusBookingSystem.Application.Services.IAuthService, BusBookingSystem.Application.Services.AuthService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.IBusService, BusBookingSystem.Application.Services.Impl.BusService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ITripService, BusBookingSystem.Application.Services.Impl.TripService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.IPassengerService, BusBookingSystem.Application.Services.Impl.PassengerService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ILocationService, BusBookingSystem.Application.Services.Impl.LocationService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.IAuthService, BusBookingSystem.Application.Services.Impl.AuthService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ITicketService, BusBookingSystem.Application.Services.Impl.TicketService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
