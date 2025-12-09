@@ -38,16 +38,16 @@ namespace BusBookingSystem.API.Controllers
         {
             try
             {
-                await _tripService.AddTripAsync(request);
-                return Ok(Response<bool>.Successful(true));
+                var createdTrip = await _tripService.AddTripAsync(request);
+                return Ok(Response<TripDto>.Successful(createdTrip, "Sefer başarıyla oluşturulmuştur"));
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(Response<bool>.Fail(ex.Message));
+                return BadRequest(Response<TripDto>.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                return BadRequest(Response<bool>.Fail(ex.Message));
+                return BadRequest(Response<TripDto>.Fail(ex.Message));
             }
         }
     }

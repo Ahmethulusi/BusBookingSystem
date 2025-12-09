@@ -1,9 +1,10 @@
 using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Core.Entities;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace BusBookingSystem.Application.Services
+namespace BusBookingSystem.Application.Services.Impl
 {
     public class PassengerService : IPassengerService
     {
@@ -42,7 +43,7 @@ namespace BusBookingSystem.Application.Services
             await _context.Passengers.AddAsync(newPassenger);
             await _context.SaveChangesAsync();
 
-            return MapToPassengerDto(newPassenger);
+            return newPassenger.ToDto();
         }
 
         // Tüm Yolcuları Çek
@@ -53,20 +54,20 @@ namespace BusBookingSystem.Application.Services
                 .ThenBy(p => p.FirstName)
                 .ToListAsync();
 
-            return passengers.Select(MapToPassengerDto);
+            return passengers.ToDto();
         }
 
         public async Task<PassengerDto?> GetPassengerByIdAsync(int id)
         {
             var passenger = await _context.Passengers.FindAsync(id);
-            return passenger != null ? MapToPassengerDto(passenger) : null;
+            return passenger?.ToDto();
         }
 
         public async Task<PassengerDto?> GetPassengerByTcNoAsync(string tcNo)
         {
             var passenger = await _context.Passengers
                 .FirstOrDefaultAsync(p => p.TcNo == tcNo);
-            return passenger != null ? MapToPassengerDto(passenger) : null;
+            return passenger?.ToDto();
         }
 
 
@@ -95,7 +96,7 @@ namespace BusBookingSystem.Application.Services
             passenger.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return MapToPassengerDto(passenger);
+            return passenger.ToDto();
         }
 
         public async Task<bool> DeletePassengerAsync(int id)
@@ -121,24 +122,6 @@ namespace BusBookingSystem.Application.Services
         public async Task<bool> PassengerExistsByEmailAsync(string email)
         {
             return await _context.Passengers.AnyAsync(p => p.Email == email);
-        }
-
-
-
-        private static PassengerDto MapToPassengerDto(Passenger passenger)
-        {
-            return new PassengerDto
-            {
-                Id = passenger.Id,
-                FirstName = passenger.FirstName,
-                LastName = passenger.LastName,
-                TcNo = passenger.TcNo,
-                Email = passenger.Email,
-                PhoneNumber = passenger.PhoneNumber,
-                Gender = passenger.Gender,
-                DateOfBirth = passenger.DateOfBirth,
-                CreatedDate = passenger.CreatedDate
-            };
         }
     }
 }

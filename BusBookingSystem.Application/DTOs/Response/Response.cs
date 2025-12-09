@@ -13,9 +13,9 @@ namespace BusBookingSystem.Application.DTOs.Response
             Message = message;
         }
 
-        public static Response<T> Successful(T body)
+        public static Response<T> Successful(T body, string message = "")
         {
-            return new Response<T>(true, body, "");
+            return new Response<T>(true, body, message);
         }
 
         public static Response<T> Fail(string message)
