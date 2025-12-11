@@ -5,6 +5,10 @@ namespace BusBookingSystem.Application.Services
 {
     public interface ITicketService
     {
+        Task<TicketDto> ReserveTicketAsync(int tripId, ReserveTicketDto ticketDto);
+
+        Task<TicketDto> CompleteReservationAsync(int ticketId, CompleteReservationDto dto);
+
         Task<TicketDto> PurchaseTicketAsync(int tripId, CreateTicketDto ticketDto);
 
         Task<TripAvailabilityDto> GetTripAvailabilityAsync(int tripId);

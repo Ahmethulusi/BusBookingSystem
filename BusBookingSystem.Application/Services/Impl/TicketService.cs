@@ -16,9 +16,28 @@ namespace BusBookingSystem.Application.Services.Impl
             _context = context;
         }
 
-        public async Task<TicketDto> PurchaseTicketAsync(int tripId, CreateTicketDto ticketDto)
+        // Süresi geçmiş rezervasyonları temizle
+        private async Task CleanExpiredReservationsAsync(int tripId)
         {
-            // 1. Seferi kontrol et
+            var expiredReservations = await _context.Tickets
+                .Where(t => t.TripId == tripId
+                    && t.IsReserved
+                    && !t.IsPaid
+                    && t.ReservationExpiresAt < DateTime.UtcNow)
+                .ToListAsync();
+
+            if (expiredReservations.Any())
+            {
+                _context.Tickets.RemoveRange(expiredReservations);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        // Koltuk rezerve et
+        public async Task<TicketDto> ReserveTicketAsync(int tripId, ReserveTicketDto ticketDto)
+        {
+            await CleanExpiredReservationsAsync(tripId);
+
             var trip = await _context.Trips
                 .Include(t => t.Bus)
                 .Include(t => t.OriginCity)
@@ -31,35 +50,134 @@ namespace BusBookingSystem.Application.Services.Impl
             if (ticketDto.SeatNumber < 1 || ticketDto.SeatNumber > trip.Bus.TotalSeatCount)
                 throw new InvalidOperationException($"Geçersiz koltuk numarası. Bu otobüste 1-{trip.Bus.TotalSeatCount} arası koltuk bulunmaktadır");
 
-            var seatTaken = await _context.Tickets
-                .AnyAsync(t => t.TripId == tripId && t.SeatNumber == ticketDto.SeatNumber);
+            var existingTicket = await _context.Tickets
+                .FirstOrDefaultAsync(t => t.TripId == tripId && t.SeatNumber == ticketDto.SeatNumber);
 
-            if (seatTaken)
-                throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk zaten dolu");
+            if (existingTicket != null)
+            {
+                if (existingTicket.IsPaid)
+                    throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk satın alınmış durumda");
+                else if (existingTicket.IsReserved)
+                    throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk rezerve edilmiş durumda");
+            }
 
             var passenger = await _context.Passengers.FindAsync(ticketDto.PassengerId);
             if (passenger == null)
                 throw new InvalidOperationException("Yolcu bulunamadı");
 
-            if (ticketDto.PaidAmount > 0 && ticketDto.PaidAmount < trip.Price)
-                throw new InvalidOperationException($"Yetersiz ödeme! Bilet fiyatı: {trip.Price} TL, Ödenen tutar: {ticketDto.PaidAmount} TL");
-
+            // Rezervasyon oluştur - 1 saat geçerli
             var ticket = new Ticket
             {
                 TripId = tripId,
                 PassengerId = ticketDto.PassengerId,
                 SeatNumber = ticketDto.SeatNumber,
-                PaidAmount = ticketDto.PaidAmount > 0 ? ticketDto.PaidAmount : trip.Price,
-                IsReserved = ticketDto.IsReserved,
-                IsPaid = ticketDto.IsPaid,
-                ReservationExpiresAt = ticketDto.ReservationExpiresAt,
+                PaidAmount = 0,
+                IsReserved = true,
+                IsPaid = false,
+                ReservationExpiresAt = DateTime.UtcNow.AddHours(1),
                 CreatedDate = DateTime.UtcNow
             };
 
             await _context.Tickets.AddAsync(ticket);
             await _context.SaveChangesAsync();
 
-            // Include ilişkili verileri yükle ve DTO'ya çevir
+            var createdTicket = await _context.Tickets
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Passenger)
+                .FirstOrDefaultAsync(t => t.Id == ticket.Id);
+
+            return createdTicket!.ToDto();
+        }
+
+        // Rezervasyonu tamamla
+        public async Task<TicketDto> CompleteReservationAsync(int ticketId, CompleteReservationDto dto)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Passenger)
+                .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+            if (ticket == null)
+                throw new InvalidOperationException("Bilet bulunamadı");
+
+            if (!ticket.IsReserved)
+                throw new InvalidOperationException("Bu bilet rezerve edilmemiş");
+
+            if (ticket.IsPaid)
+                throw new InvalidOperationException("Bu bilet zaten ödenmiş");
+
+            if (ticket.ReservationExpiresAt < DateTime.UtcNow)
+            {
+                _context.Tickets.Remove(ticket);
+                await _context.SaveChangesAsync();
+                throw new InvalidOperationException("Rezervasyon süresi dolmuş. Lütfen tekrar rezerve edin");
+            }
+
+            if (dto.PaidAmount < ticket.Trip.Price)
+                throw new InvalidOperationException($"Yetersiz ödeme! Bilet fiyatı: {ticket.Trip.Price} TL, Ödenen tutar: {dto.PaidAmount} TL");
+
+            ticket.PaidAmount = dto.PaidAmount;
+            ticket.IsPaid = true;
+            ticket.ReservationExpiresAt = null;
+
+            await _context.SaveChangesAsync();
+
+            return ticket.ToDto();
+        }
+
+        // Direkt satın alma 
+        public async Task<TicketDto> PurchaseTicketAsync(int tripId, CreateTicketDto ticketDto)
+        {
+            await CleanExpiredReservationsAsync(tripId);
+
+            var trip = await _context.Trips
+                .Include(t => t.Bus)
+                .Include(t => t.OriginCity)
+                .Include(t => t.DestinationCity)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null)
+                throw new InvalidOperationException("Sefer bulunamadı");
+
+            if (ticketDto.SeatNumber < 1 || ticketDto.SeatNumber > trip.Bus.TotalSeatCount)
+                throw new InvalidOperationException($"Geçersiz koltuk numarası. Bu otobüste 1-{trip.Bus.TotalSeatCount} arası koltuk bulunmaktadır");
+
+            var existingTicket = await _context.Tickets
+                .FirstOrDefaultAsync(t => t.TripId == tripId && t.SeatNumber == ticketDto.SeatNumber);
+
+            if (existingTicket != null)
+            {
+                if (existingTicket.IsPaid)
+                    throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk satın alınmış durumda");
+                else if (existingTicket.IsReserved)
+                    throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk rezerve edilmiş durumda");
+            }
+
+            var passenger = await _context.Passengers.FindAsync(ticketDto.PassengerId);
+            if (passenger == null)
+                throw new InvalidOperationException("Yolcu bulunamadı");
+
+            var ticket = new Ticket
+            {
+                TripId = tripId,
+                PassengerId = ticketDto.PassengerId,
+                SeatNumber = ticketDto.SeatNumber,
+                PaidAmount = trip.Price,
+                IsReserved = false,
+                IsPaid = true,
+                ReservationExpiresAt = null,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            await _context.Tickets.AddAsync(ticket);
+            await _context.SaveChangesAsync();
+
             var createdTicket = await _context.Tickets
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
@@ -73,6 +191,8 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<TripAvailabilityDto> GetTripAvailabilityAsync(int tripId)
         {
+            await CleanExpiredReservationsAsync(tripId);
+
             var trip = await _context.Trips
                 .Include(t => t.Bus)
                 .Include(t => t.Tickets)
@@ -93,11 +213,22 @@ namespace BusBookingSystem.Application.Services.Impl
             {
                 var ticket = trip.Tickets.FirstOrDefault(t => t.SeatNumber == seatNumber);
 
+                string seatStatus = "Available";
+                if (ticket != null)
+                {
+                    if (ticket.IsPaid)
+                        seatStatus = "Sold";
+                    else if (ticket.IsReserved)
+                        seatStatus = "Reserved";
+                }
+
                 seats.Add(new SeatAvailabilityDto
                 {
                     SeatNumber = seatNumber,
                     IsAvailable = ticket == null,
-                    PassengerName = ticket != null ? $"{ticket.Passenger.FirstName} {ticket.Passenger.LastName}" : null
+                    PassengerName = ticket?.IsPaid == true ? $"{ticket.Passenger.FirstName} {ticket.Passenger.LastName}" : null,
+                    Status = seatStatus,
+                    ReservationExpiresAt = ticket?.IsReserved == true ? ticket.ReservationExpiresAt : null
                 });
             }
 
@@ -113,10 +244,12 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<bool> IsSeatAvailableAsync(int tripId, int seatNumber)
         {
-            var isTaken = await _context.Tickets
-                .AnyAsync(t => t.TripId == tripId && t.SeatNumber == seatNumber);
+            await CleanExpiredReservationsAsync(tripId);
 
-            return !isTaken;
+            var ticket = await _context.Tickets
+                .FirstOrDefaultAsync(t => t.TripId == tripId && t.SeatNumber == seatNumber);
+
+            return ticket == null;
         }
 
         // Yolcunun biletlerini getir
