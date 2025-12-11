@@ -20,6 +20,7 @@ namespace BusBookingSystem.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllBuses()
         {
             try
@@ -34,6 +35,7 @@ namespace BusBookingSystem.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateBus([FromBody] CreateBusDto request)
         {
             try
