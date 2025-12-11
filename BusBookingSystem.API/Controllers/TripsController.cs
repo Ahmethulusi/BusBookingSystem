@@ -34,6 +34,7 @@ namespace BusBookingSystem.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateTrip([FromBody] CreateTripDto request)
         {
             try

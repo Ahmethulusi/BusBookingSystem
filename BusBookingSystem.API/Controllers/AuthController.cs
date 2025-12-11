@@ -56,6 +56,7 @@ namespace BusBookingSystem.API.Controllers
         }
 
         [HttpGet("users")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllUsers()
         {
             try
