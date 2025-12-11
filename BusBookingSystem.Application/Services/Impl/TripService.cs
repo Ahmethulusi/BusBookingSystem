@@ -19,28 +19,44 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<TripDto> AddTripAsync(CreateTripDto tripDto)
         {
-            // 1. Bus'ın var olup olmadığını kontrol et
-            var busExists = await _context.Buses.AnyAsync(b => b.Id == tripDto.BusId);
-            if (!busExists)
+            // 1. Company'nin var olup olmadığını kontrol et
+            var companyExists = await _context.Companies.AnyAsync(c => c.Id == tripDto.CompanyId);
+            if (!companyExists)
             {
-                throw new ArgumentException($"Bus with ID {tripDto.BusId} not found.");
+                throw new ArgumentException($"Company with ID {tripDto.CompanyId} not found.");
             }
 
-            // 2. Origin City'nin var olup olmadığını kontrol et
+            // 2. Bus'ın var olup olmadığını ve Company'ye ait olup olmadığını kontrol et
+            var bus = await _context.Buses
+                .FirstOrDefaultAsync(b => b.Id == tripDto.BusId && b.CompanyId == tripDto.CompanyId);
+            if (bus == null)
+            {
+                var busExists = await _context.Buses.AnyAsync(b => b.Id == tripDto.BusId);
+                if (!busExists)
+                {
+                    throw new ArgumentException($"Bus with ID {tripDto.BusId} not found.");
+                }
+                else
+                {
+                    throw new ArgumentException($"Bus with ID {tripDto.BusId} does not belong to Company with ID {tripDto.CompanyId}.");
+                }
+            }
+
+            // 3. Origin City'nin var olup olmadığını kontrol et
             var originCityExists = await _context.Cities.AnyAsync(c => c.Id == tripDto.OriginCityId);
             if (!originCityExists)
             {
                 throw new ArgumentException($"Origin City with ID {tripDto.OriginCityId} not found.");
             }
 
-            // 3. Destination City'nin var olup olmadığını kontrol et
+            // 4. Destination City'nin var olup olmadığını kontrol et
             var destinationCityExists = await _context.Cities.AnyAsync(c => c.Id == tripDto.DestinationCityId);
             if (!destinationCityExists)
             {
                 throw new ArgumentException($"Destination City with ID {tripDto.DestinationCityId} not found.");
             }
 
-            // 4. Origin District kontrolü (eğer verilmişse)
+            // 5. Origin District kontrolü (eğer verilmişse)
             if (tripDto.OriginDistrictId.HasValue)
             {
                 var originDistrictExists = await _context.Districts
@@ -51,7 +67,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 }
             }
 
-            // 5. Destination District kontrolü (eğer verilmişse)
+            // 6. Destination District kontrolü (eğer verilmişse)
             if (tripDto.DestinationDistrictId.HasValue)
             {
                 var destinationDistrictExists = await _context.Districts
@@ -62,9 +78,10 @@ namespace BusBookingSystem.Application.Services.Impl
                 }
             }
 
-            // 6. DTO'yu Entity'ye çevir
+            // 7. DTO'yu Entity'ye çevir
             var newTrip = new Trip
             {
+                CompanyId = tripDto.CompanyId,
                 BusId = tripDto.BusId,
                 OriginCityId = tripDto.OriginCityId,
                 OriginDistrictId = tripDto.OriginDistrictId,
@@ -75,13 +92,13 @@ namespace BusBookingSystem.Application.Services.Impl
                 Price = tripDto.Price
             };
 
-            // 7. Veritabanına ekle
+            // 8. Veritabanına ekle
             await _context.Trips.AddAsync(newTrip);
 
-            // 8. Değişiklikleri kaydet
+            // 9. Değişiklikleri kaydet
             await _context.SaveChangesAsync();
 
-            // 9. Oluşturulan seferi ilişkili verilerle birlikte getir
+            // 10. Oluşturulan seferi ilişkili verilerle birlikte getir
             var createdTrip = await _context.Trips
                 .Include(t => t.OriginCity)
                 .Include(t => t.OriginDistrict)
@@ -89,7 +106,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Include(t => t.DestinationDistrict)
                 .FirstOrDefaultAsync(t => t.Id == newTrip.Id);
 
-            // 10. DTO'ya çevir ve döndür
+            // 11. DTO'ya çevir ve döndür
             return createdTrip!.ToDto();
         }
 

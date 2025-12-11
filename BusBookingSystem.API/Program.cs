@@ -75,6 +75,7 @@ builder.Services.AddScoped<BusBookingSystem.Application.Services.IPassengerServi
 builder.Services.AddScoped<BusBookingSystem.Application.Services.ILocationService, BusBookingSystem.Application.Services.Impl.LocationService>();
 builder.Services.AddScoped<BusBookingSystem.Application.Services.IAuthService, BusBookingSystem.Application.Services.Impl.AuthService>();
 builder.Services.AddScoped<BusBookingSystem.Application.Services.ITicketService, BusBookingSystem.Application.Services.Impl.TicketService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ICompanyService, BusBookingSystem.Application.Services.Impl.CompanyService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

@@ -6,7 +6,7 @@ namespace BusBookingSystem.Core.Entities
         public string Brand { get; set; } = string.Empty;
         public int TotalSeatCount { get; set; }
 
-        // Navigation Property
-        public ICollection<Trip> Trips { get; set; } = new List<Trip>();
+        public int CompanyId { get; set; }
+        public Company Company { get; set; } = null!;
     }
 }

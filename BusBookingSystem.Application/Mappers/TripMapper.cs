@@ -10,13 +10,14 @@ namespace BusBookingSystem.Application.Mappers
             return new TripDto
             {
                 Id = trip.Id,
+                CompanyId = trip.CompanyId,
                 BusId = trip.BusId,
                 OriginCityId = trip.OriginCityId,
-                OriginCityName = trip.OriginCity?.Name,
+                OriginCityName = trip.OriginCity?.Name ?? string.Empty,
                 OriginDistrictId = trip.OriginDistrictId,
-                OriginDistrictName = trip.OriginDistrict?.Name,
+                OriginDistrictName = trip.OriginDistrict?.Name ?? null,
                 DestinationCityId = trip.DestinationCityId,
-                DestinationCityName = trip.DestinationCity?.Name,
+                DestinationCityName = trip.DestinationCity?.Name ?? string.Empty,
                 DestinationDistrictId = trip.DestinationDistrictId,
                 DestinationDistrictName = trip.DestinationDistrict?.Name,
                 DepartureDate = trip.DepartureDate,

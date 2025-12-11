@@ -13,6 +13,7 @@ namespace BusBookingSystem.Application.Mappers
                 PlateNumber = bus.PlateNumber,
                 Brand = bus.Brand,
                 TotalSeatCount = bus.TotalSeatCount,
+                CompanyId = bus.CompanyId,
                 CreatedDate = bus.CreatedDate
             };
         }

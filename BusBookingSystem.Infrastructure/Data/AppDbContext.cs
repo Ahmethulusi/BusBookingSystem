@@ -13,6 +13,7 @@ namespace BusBookingSystem.Infrastructure.Data
         }
 
         // Tablo tanımları
+        public DbSet<Company> Companies { get; set; }
         public DbSet<Bus> Buses { get; set; }
         public DbSet<Trip> Trips { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
@@ -27,10 +28,24 @@ namespace BusBookingSystem.Infrastructure.Data
             // Örneğin: Bir otobüs silinirse seferleri ne olsun?
             // Restrict: Otobüs silinmeye çalışılırsa ve seferi varsa izin verme (Güvenli olan)
 
+            // Company - Bus relationship (One-to-Many)
+            modelBuilder.Entity<Bus>()
+                .HasOne(b => b.Company)
+                .WithMany(c => c.Buses)
+                .HasForeignKey(b => b.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Company - Trip relationship (One-to-Many)
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.Company)
+                .WithMany(c => c.Trips)
+                .HasForeignKey(t => t.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Bus - Trip relationship (One-to-Many)
             modelBuilder.Entity<Trip>()
                 .HasOne(t => t.Bus)
-                .WithMany(b => b.Trips)
+                .WithMany()
                 .HasForeignKey(t => t.BusId)
                 .OnDelete(DeleteBehavior.Restrict);
 

@@ -4,6 +4,7 @@ namespace BusBookingSystem.Application.DTOs.Response
     public class TripDto
     {
         public int Id { get; set; }
+        public int CompanyId { get; set; }
         public int BusId { get; set; }
 
         // Origin (Kalkış) bilgileri

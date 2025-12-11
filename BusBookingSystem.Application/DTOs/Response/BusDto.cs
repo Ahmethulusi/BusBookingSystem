@@ -7,6 +7,7 @@ namespace BusBookingSystem.Application.DTOs
         public string PlateNumber { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public int TotalSeatCount { get; set; }
+        public int CompanyId { get; set; }
         public DateTime CreatedDate { get; set; }
     }
 }

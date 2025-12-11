@@ -2,6 +2,9 @@ namespace BusBookingSystem.Core.Entities
 {
     public class Trip : BaseEntity
     {
+        public int CompanyId { get; set; }
+        public Company Company { get; set; } = null!;
+
         public int BusId { get; set; }
         public Bus Bus { get; set; } = null!;
 
