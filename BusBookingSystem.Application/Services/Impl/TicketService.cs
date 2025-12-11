@@ -2,7 +2,6 @@ using BusBookingSystem.Application.DTOs;
 using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Core.Entities;
-using BusBookingSystem.Core.Helpers;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,7 +23,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Where(t => t.TripId == tripId
                     && t.IsReserved
                     && !t.IsPaid
-                    && t.ReservationExpiresAt < DateTimeHelper.GetTurkeyTimeNow())
+                    && t.ReservationExpiresAt < DateTime.Now)
                 .ToListAsync();
 
             if (expiredReservations.Any())
@@ -75,8 +74,8 @@ namespace BusBookingSystem.Application.Services.Impl
                 PaidAmount = 0,
                 IsReserved = true,
                 IsPaid = false,
-                ReservationExpiresAt = DateTimeHelper.GetTurkeyTimeNow().AddHours(1),
-                CreatedDate = DateTimeHelper.GetTurkeyTimeNow()
+                ReservationExpiresAt = DateTime.Now.AddHours(1),
+                CreatedDate = DateTime.Now
             };
 
             await _context.Tickets.AddAsync(ticket);
@@ -113,7 +112,7 @@ namespace BusBookingSystem.Application.Services.Impl
             if (ticket.IsPaid)
                 throw new InvalidOperationException("Bu bilet zaten ödenmiş");
 
-            if (ticket.ReservationExpiresAt < DateTimeHelper.GetTurkeyTimeNow())
+            if (ticket.ReservationExpiresAt < DateTime.Now)
             {
                 _context.Tickets.Remove(ticket);
                 await _context.SaveChangesAsync();
@@ -177,7 +176,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 IsReserved = false,
                 IsPaid = true,
                 ReservationExpiresAt = null,
-                CreatedDate = DateTimeHelper.GetTurkeyTimeNow()
+                CreatedDate = DateTime.Now
             };
 
             await _context.Tickets.AddAsync(ticket);

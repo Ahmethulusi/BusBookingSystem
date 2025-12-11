@@ -19,8 +19,8 @@ namespace BusBookingSystem.Application.DTOs.Response
         public int? DestinationDistrictId { get; set; }
         public string? DestinationDistrictName { get; set; }
 
-        public DateTime DepartureDate { get; set; }
-        public TimeSpan DepartureTime { get; set; }
+        public string DepartureDate { get; set; } = string.Empty;
+        public string DepartureTime { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public DateTime CreatedDate { get; set; }
     }

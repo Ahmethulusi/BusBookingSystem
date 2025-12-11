@@ -21,7 +21,7 @@ namespace BusBookingSystem.Application.Mappers
                 CreatedDate = ticket.CreatedDate,
                 Origin = ticket.Trip.OriginCity.Name,
                 Destination = ticket.Trip.DestinationCity.Name,
-                DepartureDate = ticket.Trip.DepartureDate,
+                DepartureDate = ticket.Trip.DepartureDate.ToString("yyyy-MM-dd"),
                 TripPrice = ticket.Trip.Price
             };
         }

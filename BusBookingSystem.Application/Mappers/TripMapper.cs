@@ -20,8 +20,8 @@ namespace BusBookingSystem.Application.Mappers
                 DestinationCityName = trip.DestinationCity?.Name ?? string.Empty,
                 DestinationDistrictId = trip.DestinationDistrictId,
                 DestinationDistrictName = trip.DestinationDistrict?.Name,
-                DepartureDate = trip.DepartureDate,
-                DepartureTime = trip.DepartureTime,
+                DepartureDate = trip.DepartureDate.ToString("yyyy-MM-dd"),
+                DepartureTime = trip.DepartureTime.ToString("HH:mm:ss"),
                 Price = trip.Price,
                 CreatedDate = trip.CreatedDate
             };

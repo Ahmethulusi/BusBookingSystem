@@ -14,8 +14,8 @@ namespace BusBookingSystem.Application.DTOs.Request
         public int DestinationCityId { get; set; }
         public int? DestinationDistrictId { get; set; } // Nullable - İlçe opsiyonel
 
-        public DateTime DepartureDate { get; set; }
-        public TimeSpan DepartureTime { get; set; }
+        public DateOnly DepartureDate { get; set; }
+        public TimeOnly DepartureTime { get; set; }
         public decimal Price { get; set; }
     }
 }
