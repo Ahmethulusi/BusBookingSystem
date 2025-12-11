@@ -112,7 +112,7 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
-            var today = DateTime.Today;
+            var today = DateOnly.FromDateTime(DateTime.Today);
 
             var trips = await _context.Trips
                 .Include(t => t.OriginCity)

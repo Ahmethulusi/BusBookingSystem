@@ -3,6 +3,7 @@ using System;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BusBookingSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251211162303_ChangeDepartureTimeToTimeOnly")]
+    partial class ChangeDepartureTimeToTimeOnly
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -253,8 +256,8 @@ namespace BusBookingSystem.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateOnly>("DepartureDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("DepartureDate")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<TimeOnly>("DepartureTime")
                         .HasColumnType("time without time zone");

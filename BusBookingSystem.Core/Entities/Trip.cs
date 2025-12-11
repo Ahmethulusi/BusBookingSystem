@@ -20,8 +20,8 @@ namespace BusBookingSystem.Core.Entities
         public int? DestinationDistrictId { get; set; } // Nullable - İlçe opsiyonel
         public District? DestinationDistrict { get; set; }
 
-        public DateTime DepartureDate { get; set; }
-        public TimeSpan DepartureTime { get; set; }
+        public DateOnly DepartureDate { get; set; }
+        public TimeOnly DepartureTime { get; set; }
         public decimal Price { get; set; }
 
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();

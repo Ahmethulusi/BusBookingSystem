@@ -16,7 +16,7 @@ namespace BusBookingSystem.Application.DTOs
         // Yolculuk bilgileri
         public string Origin { get; set; } = string.Empty;
         public string Destination { get; set; } = string.Empty;
-        public DateTime DepartureDate { get; set; }
+        public string DepartureDate { get; set; } = string.Empty;
         public decimal TripPrice { get; set; }
     }
 }
