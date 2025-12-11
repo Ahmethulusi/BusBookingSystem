@@ -37,6 +37,44 @@ namespace BusBookingSystem.API.Controllers
             }
         }
 
+        // Koltuk rezerve et
+        [HttpPost("trips/{tripId}/reserve")]
+        public async Task<IActionResult> ReserveTicket(int tripId, [FromBody] ReserveTicketDto ticketDto)
+        {
+            try
+            {
+                var ticket = await _ticketService.ReserveTicketAsync(tripId, ticketDto);
+                return Ok(Response<TicketDto>.Successful(ticket, $"Koltuk rezerve edildi. {ticket.ReservationExpiresAt:dd.MM.yyyy HH:mm} tarihine kadar geçerlidir"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(Response<TicketDto>.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<TicketDto>.Fail(ex.Message));
+            }
+        }
+
+        // Rezervasyonu tamamla
+        [HttpPost("{ticketId}/complete-reservation")]
+        public async Task<IActionResult> CompleteReservation(int ticketId, [FromBody] CompleteReservationDto dto)
+        {
+            try
+            {
+                var ticket = await _ticketService.CompleteReservationAsync(ticketId, dto);
+                return Ok(Response<TicketDto>.Successful(ticket, "Rezervasyonunuz tamamlandı. Biletiniz satın alınmıştır"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(Response<TicketDto>.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<TicketDto>.Fail(ex.Message));
+            }
+        }
+
         // Sefer için koltuk durumunu görüntüle
         [HttpGet("trips/{tripId}/availability")]
         public async Task<IActionResult> GetTripAvailability(int tripId)
