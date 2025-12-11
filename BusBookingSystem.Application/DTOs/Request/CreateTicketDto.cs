@@ -12,6 +12,7 @@ namespace BusBookingSystem.Application.DTOs
     {
         public int PassengerId { get; set; }
         public int SeatNumber { get; set; }
+        public decimal PaidAmount { get; set; }
     }
 
     // Rezervasyonu tamamlama için kullanılacak

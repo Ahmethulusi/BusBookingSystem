@@ -74,7 +74,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 PaidAmount = 0,
                 IsReserved = true,
                 IsPaid = false,
-                ReservationExpiresAt = DateTime.UtcNow.AddHours(1),
+                ReservationExpiresAt = DateTime.UtcNow.AddMinutes(10),
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -163,12 +163,16 @@ namespace BusBookingSystem.Application.Services.Impl
             if (passenger == null)
                 throw new InvalidOperationException("Yolcu bulunamadı");
 
+            // Ödeme kontrolü
+            if (ticketDto.PaidAmount < trip.Price)
+                throw new InvalidOperationException($"Yetersiz ödeme! Bilet fiyatı: {trip.Price} TL, Ödenen tutar: {ticketDto.PaidAmount} TL");
+
             var ticket = new Ticket
             {
                 TripId = tripId,
                 PassengerId = ticketDto.PassengerId,
                 SeatNumber = ticketDto.SeatNumber,
-                PaidAmount = trip.Price,
+                PaidAmount = ticketDto.PaidAmount,
                 IsReserved = false,
                 IsPaid = true,
                 ReservationExpiresAt = null,
