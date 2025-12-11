@@ -1,6 +1,7 @@
 using BusBookingSystem.Application.DTOs;
 using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Core.Entities;
+using BusBookingSystem.Core.Helpers;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -93,7 +94,7 @@ namespace BusBookingSystem.Application.Services.Impl
             passenger.PhoneNumber = updateDto.PhoneNumber;
             passenger.Gender = updateDto.Gender;
             passenger.DateOfBirth = updateDto.DateOfBirth;
-            passenger.UpdatedDate = DateTime.UtcNow;
+            passenger.UpdatedDate = DateTimeHelper.GetTurkeyTimeNow();
 
             await _context.SaveChangesAsync();
             return passenger.ToDto();

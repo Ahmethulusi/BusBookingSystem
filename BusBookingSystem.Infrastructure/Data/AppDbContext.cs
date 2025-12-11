@@ -1,5 +1,6 @@
 // Dosya: BusBookingSystem.Infrastructure/Data/AppDbContext.cs
 using BusBookingSystem.Core.Entities;
+using BusBookingSystem.Core.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace BusBookingSystem.Infrastructure.Data
@@ -116,6 +117,35 @@ namespace BusBookingSystem.Infrastructure.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);
+        }
+
+        // Tüm entity'ler için CreatedDate ve UpdatedDate'i otomatik olarak Türkiye saatine göre ayarla
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var entries = ChangeTracker.Entries()
+                .Where(e => e.Entity is BaseEntity && 
+                            (e.State == EntityState.Added || e.State == EntityState.Modified));
+
+            foreach (var entityEntry in entries)
+            {
+                var entity = (BaseEntity)entityEntry.Entity;
+                
+                if (entityEntry.State == EntityState.Added)
+                {
+                    // Eğer CreatedDate set edilmemişse, Türkiye saatini kullan
+                    if (entity.CreatedDate == default(DateTime))
+                    {
+                        entity.CreatedDate = DateTimeHelper.GetTurkeyTimeNow();
+                    }
+                }
+                else if (entityEntry.State == EntityState.Modified)
+                {
+                    // UpdatedDate'i her zaman Türkiye saatine göre güncelle
+                    entity.UpdatedDate = DateTimeHelper.GetTurkeyTimeNow();
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

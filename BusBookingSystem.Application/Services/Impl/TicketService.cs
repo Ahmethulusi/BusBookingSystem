@@ -2,6 +2,7 @@ using BusBookingSystem.Application.DTOs;
 using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Core.Entities;
+using BusBookingSystem.Core.Helpers;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,7 +24,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Where(t => t.TripId == tripId
                     && t.IsReserved
                     && !t.IsPaid
-                    && t.ReservationExpiresAt < DateTime.UtcNow)
+                    && t.ReservationExpiresAt < DateTimeHelper.GetTurkeyTimeNow())
                 .ToListAsync();
 
             if (expiredReservations.Any())
@@ -74,8 +75,8 @@ namespace BusBookingSystem.Application.Services.Impl
                 PaidAmount = 0,
                 IsReserved = true,
                 IsPaid = false,
-                ReservationExpiresAt = DateTime.UtcNow.AddMinutes(10),
-                CreatedDate = DateTime.UtcNow
+                ReservationExpiresAt = DateTimeHelper.GetTurkeyTimeNow().AddHours(1),
+                CreatedDate = DateTimeHelper.GetTurkeyTimeNow()
             };
 
             await _context.Tickets.AddAsync(ticket);
@@ -112,7 +113,7 @@ namespace BusBookingSystem.Application.Services.Impl
             if (ticket.IsPaid)
                 throw new InvalidOperationException("Bu bilet zaten ödenmiş");
 
-            if (ticket.ReservationExpiresAt < DateTime.UtcNow)
+            if (ticket.ReservationExpiresAt < DateTimeHelper.GetTurkeyTimeNow())
             {
                 _context.Tickets.Remove(ticket);
                 await _context.SaveChangesAsync();
@@ -176,7 +177,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 IsReserved = false,
                 IsPaid = true,
                 ReservationExpiresAt = null,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTimeHelper.GetTurkeyTimeNow()
             };
 
             await _context.Tickets.AddAsync(ticket);
