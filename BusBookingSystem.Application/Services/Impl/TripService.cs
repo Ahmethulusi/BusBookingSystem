@@ -71,8 +71,8 @@ namespace BusBookingSystem.Application.Services.Impl
                 DestinationCityId = tripDto.DestinationCityId,
                 DestinationDistrictId = tripDto.DestinationDistrictId,
                 DepartureDate = tripDto.DepartureDate,
-                Price = tripDto.Price,
-                // CreatedDate otomatik atanıyor (BaseEntity'den)
+                DepartureTime = tripDto.DepartureTime,
+                Price = tripDto.Price
             };
 
             // 7. Veritabanına ekle
@@ -95,13 +95,16 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
+            var today = DateTime.Today;
 
             var trips = await _context.Trips
                 .Include(t => t.OriginCity)
                 .Include(t => t.OriginDistrict)
                 .Include(t => t.DestinationCity)
                 .Include(t => t.DestinationDistrict)
+                .Where(t => t.DepartureDate >= today)
                 .OrderBy(t => t.DepartureDate)
+                .ThenBy(t => t.DepartureTime)
                 .ToListAsync();
 
             return trips.ToDto();

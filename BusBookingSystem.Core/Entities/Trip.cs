@@ -18,6 +18,7 @@ namespace BusBookingSystem.Core.Entities
         public District? DestinationDistrict { get; set; }
 
         public DateTime DepartureDate { get; set; }
+        public TimeSpan DepartureTime { get; set; }
         public decimal Price { get; set; }
 
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
