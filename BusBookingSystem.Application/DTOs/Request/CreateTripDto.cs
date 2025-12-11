@@ -8,11 +8,11 @@ namespace BusBookingSystem.Application.DTOs.Request
 
         // Origin (Kalkış) bilgileri
         public int OriginCityId { get; set; }
-        public int? OriginDistrictId { get; set; } // Nullable - İlçe opsiyonel
+        public int? OriginDistrictId { get; set; }
 
         // Destination (Varış) bilgileri
         public int DestinationCityId { get; set; }
-        public int? DestinationDistrictId { get; set; } // Nullable - İlçe opsiyonel
+        public int? DestinationDistrictId { get; set; }
 
         public DateOnly DepartureDate { get; set; }
         public TimeOnly DepartureTime { get; set; }

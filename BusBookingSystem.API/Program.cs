@@ -2,6 +2,8 @@
 
 using System.Text;
 using BusBookingSystem.Infrastructure.Data;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -77,7 +79,16 @@ builder.Services.AddScoped<BusBookingSystem.Application.Services.IAuthService, B
 builder.Services.AddScoped<BusBookingSystem.Application.Services.ITicketService, BusBookingSystem.Application.Services.Impl.TicketService>();
 builder.Services.AddScoped<BusBookingSystem.Application.Services.ICompanyService, BusBookingSystem.Application.Services.Impl.CompanyService>();
 
+// FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<BusBookingSystem.Application.Validators.CreatePassengerDtoValidator>();
+
 builder.Services.AddControllers();
+
+builder.Services.AddFluentValidationAutoValidation(config =>
+{
+    config.DisableDataAnnotationsValidation = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 
 // 4. SWAGGER CONFIGURATION WITH JWT
@@ -119,7 +130,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthentication(); // JWT Authentication middleware - UseAuthorization'dan önce olmalı!
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -1,13 +1,13 @@
 namespace BusBookingSystem.Application.DTOs
 {
-    // Rezervasyon için kullanılacak
+    // Rezervasyon için 
     public class ReserveTicketDto
     {
         public int PassengerId { get; set; }
         public int SeatNumber { get; set; }
     }
 
-    // Direkt satın alma için kullanılacak (eski CreateTicketDto)
+    // Direkt satın alma 
     public class CreateTicketDto
     {
         public int PassengerId { get; set; }
@@ -15,7 +15,7 @@ namespace BusBookingSystem.Application.DTOs
         public decimal PaidAmount { get; set; }
     }
 
-    // Rezervasyonu tamamlama için kullanılacak
+    // Rezervasyonu tamamlama için 
     public class CompleteReservationDto
     {
         public decimal PaidAmount { get; set; }
