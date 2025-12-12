@@ -51,7 +51,6 @@ namespace BusBookingSystem.API.Controllers
         }
 
         [HttpGet("tc/{tcNo}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPassengerByTcNo(string tcNo)
         {
             try

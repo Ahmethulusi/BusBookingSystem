@@ -51,6 +51,13 @@ namespace BusBookingSystem.API.Controllers
                 return BadRequest(Response<TripDto>.Fail(ex.Message));
             }
         }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchTrips([FromQuery] int originId, [FromQuery] int destinationId, [FromQuery] DateTime date)    
+        {
+         var trips = await _tripService.SearchTripsAsync(originId, destinationId, date);
+
+        return Ok(new { success = true, body = trips }); 
+}
     }
 }
 

@@ -17,7 +17,6 @@ namespace BusBookingSystem.API.Controllers
         {
             _ticketService = ticketService;
         }
-
         // Bilet satın al
         [HttpPost("trips/{tripId}/purchase")]
         public async Task<IActionResult> PurchaseTicket(int tripId, [FromBody] CreateTicketDto ticketDto)

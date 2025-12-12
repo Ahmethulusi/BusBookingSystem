@@ -126,6 +126,36 @@ namespace BusBookingSystem.Application.Services.Impl
 
             return trips.ToDto();
         }
+        
+        public async Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int destinationId, DateTime date)
+{
+        var trips = await _context.Trips
+        .Include(t => t.Bus)          
+        .Include(t => t.OriginCity)       
+        .Include(t => t.DestinationCity)   
+        .Where(t => t.OriginCityId == originId && 
+                    t.DestinationCityId == destinationId && 
+                    t.DepartureDate.Date == date.Date) 
+        .OrderBy(t => t.DepartureDate)
+        .ToListAsync();
+
+        return trips.Select(trip => new TripDto {
+        Id = trip.Id,
+        BusId = trip.BusId,
+        
+        OriginCityId = trip.OriginCityId,
+        OriginCityName = trip.OriginCity?.Name ?? "",
+        
+        DestinationCityId = trip.DestinationCityId,
+        DestinationCityName = trip.DestinationCity?.Name ?? "",
+
+        DepartureDate = trip.DepartureDate,
+        DepartureTime = trip.DepartureTime,
+        Price = trip.Price,
+        CreatedDate = trip.CreatedDate
+    });
+}
     }
+    
 }
 
