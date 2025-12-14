@@ -14,7 +14,8 @@ namespace BusBookingSystem.Application.Mappers
                 Brand = bus.Brand,
                 TotalSeatCount = bus.TotalSeatCount,
                 CompanyId = bus.CompanyId,
-                CreatedDate = bus.CreatedDate
+                CreatedDate = bus.CreatedDate,
+                CompanyName = bus.Company?.Name ?? "Firma Belirsiz"
             };
         }
 

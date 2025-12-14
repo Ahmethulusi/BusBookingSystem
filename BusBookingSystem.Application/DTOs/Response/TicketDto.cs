@@ -1,11 +1,11 @@
+using BusBookingSystem.Application.DTOs.Response;
+
 namespace BusBookingSystem.Application.DTOs
 {
     public class TicketDto
     {
         public int Id { get; set; }
-        public int TripId { get; set; }
-        public int PassengerId { get; set; }
-        public string PassengerName { get; set; } = string.Empty;
+        
         public int SeatNumber { get; set; }
         public decimal PaidAmount { get; set; }
         public bool IsReserved { get; set; }
@@ -14,9 +14,7 @@ namespace BusBookingSystem.Application.DTOs
         public DateTime CreatedDate { get; set; }
 
         // Yolculuk bilgileri
-        public string Origin { get; set; } = string.Empty;
-        public string Destination { get; set; } = string.Empty;
-        public string DepartureDate { get; set; } = string.Empty;
-        public decimal TripPrice { get; set; }
+        public TripDto? Trip { get; set; }       
+        public PassengerDto? Passenger { get; set; }
     }
 }

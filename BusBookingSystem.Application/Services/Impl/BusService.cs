@@ -32,7 +32,6 @@ namespace BusBookingSystem.Application.Services.Impl
                 Brand = busDto.Brand,
                 TotalSeatCount = busDto.TotalSeatCount,
                 CompanyId = busDto.CompanyId,
-                // CreatedDate otomatik atanıyor (BaseEntity'den)
             };
 
             // 3. Veritabanına ekle
@@ -48,6 +47,7 @@ namespace BusBookingSystem.Application.Services.Impl
         public async Task<IEnumerable<BusDto>> GetAllBusesAsync()
         {
             var buses = await _context.Buses
+                .Include(b => b.Company)
                 .OrderBy(b => b.CreatedDate)
                 .ToListAsync();
 

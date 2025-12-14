@@ -23,7 +23,8 @@ namespace BusBookingSystem.Application.Mappers
                 DepartureDate = trip.DepartureDate.ToString("yyyy-MM-dd"),
                 DepartureTime = trip.DepartureTime.ToString("HH:mm:ss"),
                 Price = trip.Price,
-                CreatedDate = trip.CreatedDate
+                CreatedDate = trip.CreatedDate,
+                SoldTicketCount = trip.Tickets != null ? trip.Tickets.Count : 0
             };
         }
 

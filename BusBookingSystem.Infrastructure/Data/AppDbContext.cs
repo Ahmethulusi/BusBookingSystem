@@ -2,18 +2,16 @@
 using BusBookingSystem.Core.Entities;
 using BusBookingSystem.Core.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion; // ✨ BU EKLENDİ
 
 namespace BusBookingSystem.Infrastructure.Data
 {
-    // Bu sınıf veritabanının ta kendisidir.
     public class AppDbContext : DbContext
     {
-        // Constructor: Ayarları (Connection String vb.) alıp mirasa (base) gönderir.
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
 
-        // Tablo tanımları
         public DbSet<Company> Companies { get; set; }
         public DbSet<Bus> Buses { get; set; }
         public DbSet<Trip> Trips { get; set; }
@@ -23,12 +21,10 @@ namespace BusBookingSystem.Infrastructure.Data
         public DbSet<Passenger> Passengers { get; set; }
         public DbSet<User> Users { get; set; }
 
-        // Veritabanı oluşurken çalışacak özel ayarlar
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Örneğin: Bir otobüs silinirse seferleri ne olsun?
-            // Restrict: Otobüs silinmeye çalışılırsa ve seferi varsa izin verme (Güvenli olan)
-
+            // --- MEVCUT İLİŞKİLER (DOKUNMA) ---
+            
             // Company - Bus relationship (One-to-Many)
             modelBuilder.Entity<Bus>()
                 .HasOne(b => b.Company)
@@ -73,7 +69,7 @@ namespace BusBookingSystem.Infrastructure.Data
                 .HasIndex(p => p.Email)
                 .IsUnique();
 
-            // Ticket unique constraint (bir seferde aynı koltuk sadece bir kez rezerve edilebilir)
+            // Ticket unique constraint
             modelBuilder.Entity<Ticket>()
                 .HasIndex(t => new { t.TripId, t.SeatNumber })
                 .IsUnique();
@@ -83,14 +79,14 @@ namespace BusBookingSystem.Infrastructure.Data
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
-            // City - District relationship (One-to-Many)
+            // City - District relationship
             modelBuilder.Entity<District>()
                 .HasOne(d => d.City)
                 .WithMany(c => c.Districts)
                 .HasForeignKey(d => d.CityId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Trip - City relationships (Origin)
+            // Trip - City/District relationships
             modelBuilder.Entity<Trip>()
                 .HasOne(t => t.OriginCity)
                 .WithMany()
@@ -103,7 +99,6 @@ namespace BusBookingSystem.Infrastructure.Data
                 .HasForeignKey(t => t.OriginDistrictId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Trip - City relationships (Destination)
             modelBuilder.Entity<Trip>()
                 .HasOne(t => t.DestinationCity)
                 .WithMany()
@@ -116,10 +111,35 @@ namespace BusBookingSystem.Infrastructure.Data
                 .HasForeignKey(t => t.DestinationDistrictId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            
+            var dateOnlyConverter = new ValueConverter<DateOnly, DateTime>(
+                d => d.ToDateTime(TimeOnly.MinValue),
+                d => DateOnly.FromDateTime(d));
+
+            var timeOnlyConverter = new ValueConverter<TimeOnly, TimeSpan>(
+                t => t.ToTimeSpan(),
+                t => TimeOnly.FromTimeSpan(t));
+
+            // Projedeki tüm Entity'leri gez ve bu tipleri görünce çeviriciyi uygula
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateOnly))
+                    {
+                        property.SetValueConverter(dateOnlyConverter);
+                    }
+                    else if (property.ClrType == typeof(TimeOnly))
+                    {
+                        property.SetValueConverter(timeOnlyConverter);
+                    }
+                }
+            }
+        
+
             base.OnModelCreating(modelBuilder);
         }
 
-        // Tüm entity'ler için CreatedDate ve UpdatedDate'i otomatik olarak Türkiye saatine göre ayarla
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var entries = ChangeTracker.Entries()
@@ -132,7 +152,6 @@ namespace BusBookingSystem.Infrastructure.Data
                 
                 if (entityEntry.State == EntityState.Added)
                 {
-                    // Eğer CreatedDate set edilmemişse, Türkiye saatini kullan
                     if (entity.CreatedDate == default(DateTime))
                     {
                         entity.CreatedDate = DateTimeHelper.GetTurkeyTimeNow();
@@ -140,7 +159,6 @@ namespace BusBookingSystem.Infrastructure.Data
                 }
                 else if (entityEntry.State == EntityState.Modified)
                 {
-                    // UpdatedDate'i her zaman Türkiye saatine göre güncelle
                     entity.UpdatedDate = DateTimeHelper.GetTurkeyTimeNow();
                 }
             }

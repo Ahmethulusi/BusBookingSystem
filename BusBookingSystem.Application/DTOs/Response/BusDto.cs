@@ -9,6 +9,7 @@ namespace BusBookingSystem.Application.DTOs
         public int TotalSeatCount { get; set; }
         public int CompanyId { get; set; }
         public DateTime CreatedDate { get; set; }
+        public string? CompanyName { get; set; }
     }
 }
 
