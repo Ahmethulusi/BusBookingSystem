@@ -271,7 +271,6 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
 
-                // 👇 BURAYA DA EKLE (Kullanıcı da plakayı görsün)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus) 
 
@@ -374,8 +373,6 @@ namespace BusBookingSystem.Application.Services.Impl
         }
         public async Task<bool> ValidateSeatGenderAsync(int tripId, int seatNumber, int gender)
         {
-            // Mevcut kural motorunu çağırıyoruz. 
-            // Eğer kural hatası varsa Exception fırlatır ve Controller yakalar.
             await CheckGenderRuleAsync(tripId, seatNumber, gender);
             return true;
         }

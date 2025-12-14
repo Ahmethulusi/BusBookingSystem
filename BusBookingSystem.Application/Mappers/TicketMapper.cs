@@ -25,15 +25,12 @@ namespace BusBookingSystem.Application.Mappers
                 Trip = ticket.Trip != null ? new TripDto
                 {
                     Id = ticket.Trip.Id,
-                    
-                    // 👇 ID'LERİ EŞLEŞTİRELİM (Bunlar 0 geliyordu)
                     BusId = ticket.Trip.BusId,
                     OriginCityId = ticket.Trip.OriginCityId,
                     DestinationCityId = ticket.Trip.DestinationCityId,
-                    // CompanyId eğer Trip tablosunda yoksa Bus üzerinden alabiliriz:
+                    // CompanyId eğer Trip tablosunda yoksa Bus üzerinden alınır
                     CompanyId = ticket.Trip.Bus != null ? ticket.Trip.Bus.CompanyId : 0,
 
-                    // İsimler (Zaten çalışıyordu ama kontrol et)
                     OriginCityName = ticket.Trip.OriginCity?.Name ?? "Bilinmiyor",
                     DestinationCityName = ticket.Trip.DestinationCity?.Name ?? "Bilinmiyor",
                     
@@ -48,7 +45,7 @@ namespace BusBookingSystem.Application.Mappers
                 Passenger = ticket.Passenger != null ? new PassengerDto
                 {
                     Id = ticket.Passenger.Id,
-                    FirstName = ticket.Passenger.FirstName ?? "", // İsim yoksa boş string ver
+                    FirstName = ticket.Passenger.FirstName ?? "", 
                     LastName = ticket.Passenger.LastName ?? "",
                     TcNo = ticket.Passenger.TcNo,
                     Email = ticket.Passenger.Email,

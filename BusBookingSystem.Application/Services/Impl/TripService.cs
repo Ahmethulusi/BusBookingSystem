@@ -16,7 +16,7 @@ namespace BusBookingSystem.Application.Services.Impl
             _context = context;
         }
 
-        // 🟢 EKLEME İŞLEMİ (AddTrip)
+        // EKLEME İŞLEMİ (AddTrip)
         public async Task<TripDto> AddTripAsync(CreateTripDto tripDto)
         {
             // 1. Validasyonlar (Bus, City, District...)
@@ -41,7 +41,6 @@ namespace BusBookingSystem.Application.Services.Impl
             }
             
             // 2. GEÇMİŞ ZAMAN KONTROLÜ
-            // DTO'da zaten DateOnly ve TimeOnly olduğu için direkt birleştiriyoruz. Parse gerekmez!
             DateTime tripDateTime = tripDto.DepartureDate.ToDateTime(tripDto.DepartureTime);
             
             if (tripDateTime < DateTime.Now)
@@ -62,7 +61,6 @@ namespace BusBookingSystem.Application.Services.Impl
                 DestinationCityId = tripDto.DestinationCityId,
                 DestinationDistrictId = tripDto.DestinationDistrictId,
                 
-                // 🔥 BURASI DÜZELDİ: String çevrimi yok, direkt atama var.
                 DepartureDate = tripDto.DepartureDate, 
                 DepartureTime = tripDto.DepartureTime, 
                 
@@ -90,7 +88,7 @@ namespace BusBookingSystem.Application.Services.Impl
             };
         }
 
-        // 🟢 LİSTELEME (GetAll)
+        //  LİSTELEME (GetAll)
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
@@ -109,7 +107,7 @@ namespace BusBookingSystem.Application.Services.Impl
             return trips.ToDto();
         }
 
-        // 🟢 ARAMA (SearchTrips)
+        //  ARAMA (SearchTrips)
         public async Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int destinationId, string date)
         {
             // Gelen string tarihi DateOnly'e çeviriyoruz
@@ -155,7 +153,6 @@ namespace BusBookingSystem.Application.Services.Impl
                 Id = trip.Id,
                 CompanyId = trip.CompanyId, 
                 BusId = trip.BusId,
-                // 🔥 FİRMA İSMİ BURADA
                 CompanyName = trip.Bus?.Company?.Name ?? "Firma Belirsiz", 
                 
                 OriginCityId = trip.OriginCityId,
@@ -169,10 +166,6 @@ namespace BusBookingSystem.Application.Services.Impl
                 DestinationDistrictName = trip.DestinationDistrict?.Name,
 
                 DepartureDate = trip.DepartureDate.ToString("yyyy-MM-dd"),
-                
-                // 🔥 "16:00" SORUNUNUN ÇÖZÜMÜ BURADA:
-                // "HH:mm" diyerek 24 saat formatını zorluyoruz. 
-                // Yoksa sunucu "4:00 PM" gönderebilir.
                 DepartureTime = trip.DepartureTime.ToString("HH:mm"), 
                 
                 Price = trip.Price
