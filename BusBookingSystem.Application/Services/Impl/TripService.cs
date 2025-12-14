@@ -82,7 +82,11 @@ namespace BusBookingSystem.Application.Services.Impl
             return new TripDto 
             { 
                 Id = newTrip.Id,
+                CompanyId = newTrip.CompanyId,
+                BusId = newTrip.BusId,
                 Price = newTrip.Price,
+                OriginCityId = newTrip.OriginCityId,
+                DestinationCityId = newTrip.DestinationCityId,
                 DepartureDate = newTrip.DepartureDate.ToString("yyyy-MM-dd"), 
                 DepartureTime = newTrip.DepartureTime.ToString("HH:mm") // 24 Saat Formatı
             };
