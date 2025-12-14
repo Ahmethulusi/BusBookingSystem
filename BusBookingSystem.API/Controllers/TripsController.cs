@@ -51,13 +51,43 @@ namespace BusBookingSystem.API.Controllers
                 return BadRequest(Response<TripDto>.Fail(ex.Message));
             }
         }
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchTrips([FromQuery] int originId, [FromQuery] int destinationId, [FromQuery] DateTime date)    
-        {
-         var trips = await _tripService.SearchTripsAsync(originId, destinationId, date);
 
-        return Ok(new { success = true, body = trips }); 
-}
+     [HttpGet("search")]
+        public async Task<IActionResult> SearchTrips([FromQuery] int originId, [FromQuery] int destinationId, [FromQuery] DateTime date)
+        {
+            try
+            {
+                // Tarihi string formatına (Yıl-Ay-Gün) çevirerek gönderiyoruz.
+                var trips = await _tripService.SearchTripsAsync(originId, destinationId, date.ToString("yyyy-MM-dd"));
+                
+                return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<TripDto>>.Fail(ex.Message));
+            }
+        }
+[HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteTrip(int id)
+    {
+        try
+        {
+            var result = await _tripService.DeleteTripAsync(id);
+            if (!result)
+                return NotFound(Response<bool>.Fail("Sefer bulunamadı"));
+
+            return Ok(Response<bool>.Successful(true, "Sefer başarıyla silindi"));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Bilet satılmışsa 400 hatası ve mesajı döner
+            return BadRequest(Response<bool>.Fail(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(Response<bool>.Fail(ex.Message));
+        }
+    }
     }
 }
 

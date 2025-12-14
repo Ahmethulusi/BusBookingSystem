@@ -23,6 +23,10 @@ namespace BusBookingSystem.Application.DTOs.Response
         public string DepartureTime { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public DateTime CreatedDate { get; set; }
+
+        public string? CompanyName { get; set; }
+
+        public int SoldTicketCount { get; set; }
     }
 }
 

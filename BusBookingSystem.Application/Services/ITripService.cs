@@ -9,7 +9,8 @@ namespace BusBookingSystem.Application.Services
         Task<TripDto> AddTripAsync(CreateTripDto tripDto);
         Task<IEnumerable<TripDto>> GetAllTripsAsync();
 
-        Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int destinationId, DateTime date);
+        Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int destinationId, string date);
+        Task<bool> DeleteTripAsync(int id);
     }
 }
 
