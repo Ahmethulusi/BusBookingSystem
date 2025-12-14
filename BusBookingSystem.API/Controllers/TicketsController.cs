@@ -173,5 +173,23 @@ namespace BusBookingSystem.API.Controllers
                 return BadRequest(Response<bool>.Fail(ex.Message));
             }
         }
+        [HttpGet("trips/{tripId}/seats/{seatNumber}/validate-gender")]
+        public async Task<IActionResult> ValidateSeatGender(int tripId, int seatNumber, [FromQuery] int gender)
+        {
+            try
+            {
+                await _ticketService.ValidateSeatGenderAsync(tripId, seatNumber, gender);
+                return Ok(Response<bool>.Successful(true, "Koltuk uygun"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Kural hatası varsa 400 dön ve mesajı gönder
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
+        }
     }
 }

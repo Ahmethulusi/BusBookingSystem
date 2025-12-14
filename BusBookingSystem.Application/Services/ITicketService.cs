@@ -22,5 +22,7 @@ namespace BusBookingSystem.Application.Services
         Task<bool> CancelTicketAsync(int ticketId);
 
         Task<TicketDto?> GetTicketByIdAsync(int ticketId);
+
+        Task<bool> ValidateSeatGenderAsync(int tripId, int seatNumber, int gender);
     }
 }

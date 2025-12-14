@@ -7,5 +7,7 @@ namespace BusBookingSystem.Application.DTOs.Response
         public string? PassengerName { get; set; }
         public string Status { get; set; } = "Available"; // "Available", "Reserved", "Sold"
         public DateTime? ReservationExpiresAt { get; set; }
+
+        public int Gender {get; set;}
     }
 }

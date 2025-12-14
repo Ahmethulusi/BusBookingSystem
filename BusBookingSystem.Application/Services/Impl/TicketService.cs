@@ -65,6 +65,8 @@ namespace BusBookingSystem.Application.Services.Impl
             if (passenger == null)
                 throw new InvalidOperationException("Yolcu bulunamadı");
 
+            await CheckGenderRuleAsync(tripId, ticketDto.SeatNumber, (int)passenger.Gender);
+
             // Rezervasyon oluştur - 1 saat geçerli
             var ticket = new Ticket
             {
@@ -163,6 +165,8 @@ namespace BusBookingSystem.Application.Services.Impl
             if (passenger == null)
                 throw new InvalidOperationException("Yolcu bulunamadı");
 
+            await CheckGenderRuleAsync(tripId, ticketDto.SeatNumber, (int)passenger.Gender);
+
             // Ödeme kontrolü
             if (ticketDto.PaidAmount < trip.Price)
                 throw new InvalidOperationException($"Yetersiz ödeme! Bilet fiyatı: {trip.Price} TL, Ödenen tutar: {ticketDto.PaidAmount} TL");
@@ -226,13 +230,15 @@ namespace BusBookingSystem.Application.Services.Impl
                         seatStatus = "Reserved";
                 }
 
-                seats.Add(new SeatAvailabilityDto
+               seats.Add(new SeatAvailabilityDto
                 {
                     SeatNumber = seatNumber,
                     IsAvailable = ticket == null,
                     PassengerName = ticket?.IsPaid == true ? $"{ticket.Passenger.FirstName} {ticket.Passenger.LastName}" : null,
                     Status = seatStatus,
-                    ReservationExpiresAt = ticket?.IsReserved == true ? ticket.ReservationExpiresAt : null
+                    ReservationExpiresAt = ticket?.IsReserved == true ? ticket.ReservationExpiresAt : null,
+
+                    Gender = ticket?.Passenger != null ? (int)ticket.Passenger.Gender : 0
                 });
             }
 
@@ -264,6 +270,11 @@ namespace BusBookingSystem.Application.Services.Impl
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
+
+                // 👇 BURAYA DA EKLE (Kullanıcı da plakayı görsün)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.Bus) 
+
                 .Include(t => t.Passenger)
                 .Where(t => t.PassengerId == passengerId)
                 .ToListAsync();
@@ -279,6 +290,10 @@ namespace BusBookingSystem.Application.Services.Impl
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.Bus) 
+                    .ThenInclude(b => b.Company)
+                
                 .Include(t => t.Passenger)
                 .Where(t => t.TripId == tripId)
                 .OrderBy(t => t.SeatNumber)
@@ -313,6 +328,56 @@ namespace BusBookingSystem.Application.Services.Impl
                 .FirstOrDefaultAsync(t => t.Id == ticketId);
 
             return ticket?.ToDto();
+        }
+        private async Task CheckGenderRuleAsync(int tripId, int seatNumber, int newPassengerGender)
+        {
+            // --- 2+1 OTOBÜS DÜZENİ MANTIĞI ---
+            // Izgara: [1][2]   [3]
+            //         [4][5]   [6]
+            
+            // Eğer koltuk numarası 3'ün katıysa (3, 6, 9, 12...) -> TEKLİ KOLTUKTUR.
+            // Tekli koltukta cinsiyet kuralı olmaz. Direkt çık.
+            if (seatNumber % 3 == 0) return;
+
+            int neighborSeatNumber;
+
+            // Eğer 3'e bölümünden kalan 1 ise (1, 4, 7...) -> CAM KENARI (SOL)
+            // Yanındaki koltuk: Kendisi + 1
+            if (seatNumber % 3 == 1)
+            {
+                neighborSeatNumber = seatNumber + 1;
+            }
+            // Eğer 3'e bölümünden kalan 2 ise (2, 5, 8...) -> KORİDOR (SOL)
+            // Yanındaki koltuk: Kendisi - 1
+            else 
+            {
+                neighborSeatNumber = seatNumber - 1;
+            }
+            
+            var neighborTicket = await _context.Tickets
+                .Include(t => t.Passenger)
+                .Where(t => t.TripId == tripId && t.SeatNumber == neighborSeatNumber)
+                .Where(t => t.IsPaid || (t.IsReserved && t.ReservationExpiresAt > DateTime.Now))
+                .FirstOrDefaultAsync();
+
+            if (neighborTicket != null && neighborTicket.Passenger != null)
+            {
+                int neighborGender = (int)neighborTicket.Passenger.Gender;
+
+                // 0: Belirsiz, 1: Erkek, 2: Kadın
+                if (neighborGender != 0 && newPassengerGender != 0 && neighborGender != newPassengerGender)
+                {
+                    string neighborGenderStr = neighborGender == 1 ? "Bay" : "Bayan";
+                    throw new InvalidOperationException($"Seçtiğiniz koltuğun yanında bir {neighborGenderStr} yolcu oturmaktadır. Yan yana sadece aynı cinsiyet oturabilir!");
+                }
+            }
+        }
+        public async Task<bool> ValidateSeatGenderAsync(int tripId, int seatNumber, int gender)
+        {
+            // Mevcut kural motorunu çağırıyoruz. 
+            // Eğer kural hatası varsa Exception fırlatır ve Controller yakalar.
+            await CheckGenderRuleAsync(tripId, seatNumber, gender);
+            return true;
         }
     }
     
