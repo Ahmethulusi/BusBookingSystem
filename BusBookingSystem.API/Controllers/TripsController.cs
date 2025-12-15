@@ -53,14 +53,17 @@ namespace BusBookingSystem.API.Controllers
         }
 
      [HttpGet("search")]
-        public async Task<IActionResult> SearchTrips([FromQuery] int originId, [FromQuery] int destinationId, [FromQuery] DateTime date)
+        public async Task<IActionResult> SearchTrips(
+            [FromQuery] int originId,
+            [FromQuery] int? originDistrictId,
+             [FromQuery] int destinationId,
+             [FromQuery] int? destinationDistrictId,
+              [FromQuery] DateTime date)
         {
             try
             {
-                // Tarihi string formatına (Yıl-Ay-Gün) çevirerek gönderiyoruz.
-                var trips = await _tripService.SearchTripsAsync(originId, destinationId, date.ToString("yyyy-MM-dd"));
-                
-                return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
+               var trips = await _tripService.SearchTripsAsync(originId, originDistrictId, destinationId, destinationDistrictId, date.ToString("yyyy-MM-dd"));
+            return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
             }
             catch (Exception ex)
             {

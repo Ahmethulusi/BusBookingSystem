@@ -17,13 +17,20 @@ namespace BusBookingSystem.Application.Services.Impl
         public async Task<IEnumerable<CityDto>> GetAllCitiesAsync()
         {
             var cities = await _context.Cities
+                .Include(c => c.Districts)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
 
             return cities.Select(city => new CityDto
             {
                 Id = city.Id,
-                Name = city.Name
+                Name = city.Name,
+                Districts = city.Districts.Select(d => new DistrictDto 
+                {
+                    Id = d.Id,
+                    CityId = d.CityId,
+                    Name = d.Name
+                }).OrderBy(d => d.Name).ToList()
             });
         }
 

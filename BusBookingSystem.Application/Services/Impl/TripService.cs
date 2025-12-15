@@ -147,7 +147,7 @@ namespace BusBookingSystem.Application.Services.Impl
         }
 
         //  ARAMA (SearchTrips)
-        public async Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int destinationId, string date)
+        public async Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int? originDistrictId, int destinationId, int? destinationDistrictId, string date)
         {
             // Gelen string tarihi DateOnly'e çeviriyoruz
             DateOnly searchDate;
@@ -165,6 +165,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 return new List<TripDto>();
             }
 
+            // Temel Sorgu (Include'lar ve Zorunlu Alanlar)
             var query = _context.Trips
                 .Include(t => t.Bus)           
                     .ThenInclude(b => b.Company)       
@@ -176,6 +177,18 @@ namespace BusBookingSystem.Application.Services.Impl
                     t.OriginCityId == originId && 
                     t.DestinationCityId == destinationId && 
                     t.DepartureDate == searchDate);
+
+            // 🔥 YENİ: Eğer Kalkış İlçesi seçildiyse onu da filtrele
+            if (originDistrictId.HasValue)
+            {
+                query = query.Where(t => t.OriginDistrictId == originDistrictId.Value);
+            }
+
+            // 🔥 YENİ: Eğer Varış İlçesi seçildiyse onu da filtrele
+            if (destinationDistrictId.HasValue)
+            {
+                query = query.Where(t => t.DestinationDistrictId == destinationDistrictId.Value);
+            }
 
             // Eğer BUGÜN aranıyorsa, saati geçenleri gizle
             if (searchDate == today)
@@ -208,7 +221,8 @@ namespace BusBookingSystem.Application.Services.Impl
                 DepartureDate = trip.DepartureDate.ToString("yyyy-MM-dd"),
                 DepartureTime = trip.DepartureTime.ToString("HH:mm"), 
                 
-                Price = trip.Price
+                Price = trip.Price,
+                SoldTicketCount = trip.Tickets != null ? trip.Tickets.Count(t => t.IsPaid || t.IsReserved) : 0
             });
         }
 
