@@ -11,12 +11,24 @@ namespace BusBookingSystem.Application.Mappers
             // Eğer biletin kendisi yoksa null dön
             if (ticket == null) return null!;
 
+            // Veritabanında 'Rezerve' yazsa bile, saati geçtiyse 'Rezerve Değildir' diyelim.
+            bool isActuallyReserved = ticket.IsReserved;
+            
+            if (ticket.IsReserved && ticket.ReservationExpiresAt.HasValue)
+            {
+                // Eğer şimdiki zaman, bitiş süresinden büyükse -> Süre dolmuş demektir.
+                if (DateTime.Now > ticket.ReservationExpiresAt.Value)
+                {
+                    isActuallyReserved = false; // Kullanıcıya "Boş" göster
+                }
+            }
+
             return new TicketDto
             {
                 Id = ticket.Id,
                 SeatNumber = ticket.SeatNumber,
                 PaidAmount = ticket.PaidAmount,
-                IsReserved = ticket.IsReserved,
+                IsReserved = isActuallyReserved,
                 IsPaid = ticket.IsPaid,
                 ReservationExpiresAt = ticket.ReservationExpiresAt,
                 CreatedDate = ticket.CreatedDate,
@@ -30,13 +42,13 @@ namespace BusBookingSystem.Application.Mappers
                     DestinationCityId = ticket.Trip.DestinationCityId,
                     // CompanyId eğer Trip tablosunda yoksa Bus üzerinden alınır
                     CompanyId = ticket.Trip.Bus != null ? ticket.Trip.Bus.CompanyId : 0,
-
+                    BusPlateNumber = ticket.Trip.Bus?.PlateNumber ?? "",
                     OriginCityName = ticket.Trip.OriginCity?.Name ?? "Bilinmiyor",
                     DestinationCityName = ticket.Trip.DestinationCity?.Name ?? "Bilinmiyor",
-                    
                     DepartureDate = ticket.Trip.DepartureDate.ToString("yyyy-MM-dd"),
                     DepartureTime = ticket.Trip.DepartureTime.ToString(),
                     Price = ticket.Trip.Price,
+                    SoldTicketCount = ticket.Trip.Tickets != null ? ticket.Trip.Tickets.Count : 0,
                     
                     CompanyName = ticket.Trip.Bus?.Company?.Name ?? "Firma Belirsiz"
                 } : null!,

@@ -16,42 +16,50 @@ namespace BusBookingSystem.Application.Services.Impl
             _context = context;
         }
 
-        // EKLEME İŞLEMİ (AddTrip)
         public async Task<TripDto> AddTripAsync(CreateTripDto tripDto)
         {
-            // 1. Validasyonlar (Bus, City, District...)
-            var busExists = await _context.Buses.AnyAsync(b => b.Id == tripDto.BusId);
-            if (!busExists) throw new ArgumentException($"Bus with ID {tripDto.BusId} not found.");
+            // 1. OTOBÜS VE FİRMA KONTROLÜ
+            var bus = await _context.Buses
+                                    .Include(b => b.Company)
+                                    .FirstOrDefaultAsync(b => b.Id == tripDto.BusId);
 
+            if (bus == null) throw new ArgumentException($"ID'si {tripDto.BusId} olan otobüs bulunamadı.");
+
+            if (bus.CompanyId != tripDto.CompanyId)
+            {
+                throw new ArgumentException($"Seçilen otobüs ({bus.PlateNumber}), seçilen firmaya ait değil! Lütfen doğru firma-otobüs eşleşmesi yapınız.");
+            }
+
+            // 2. City kontrolleri
             var originCityExists = await _context.Cities.AnyAsync(c => c.Id == tripDto.OriginCityId);
-            if (!originCityExists) throw new ArgumentException("Origin City not found.");
+            if (!originCityExists) throw new ArgumentException("Kalkış şehri bulunamadı.");
             
             var destinationCityExists = await _context.Cities.AnyAsync(c => c.Id == tripDto.DestinationCityId);
-            if (!destinationCityExists) throw new ArgumentException("Destination City not found.");
+            if (!destinationCityExists) throw new ArgumentException("Varış şehri bulunamadı.");
 
+            // 3. District kontrolleri
             if (tripDto.OriginDistrictId.HasValue)
             {
                 var exists = await _context.Districts.AnyAsync(d => d.Id == tripDto.OriginDistrictId.Value && d.CityId == tripDto.OriginCityId);
-                if (!exists) throw new ArgumentException("Origin District doesn't match City.");
+                if (!exists) throw new ArgumentException("Kalkış ilçesi, şehre ait değil.");
             }
             if (tripDto.DestinationDistrictId.HasValue)
             {
                 var exists = await _context.Districts.AnyAsync(d => d.Id == tripDto.DestinationDistrictId.Value && d.CityId == tripDto.DestinationCityId);
-                if (!exists) throw new ArgumentException("Destination District doesn't match City.");
+                if (!exists) throw new ArgumentException("Varış ilçesi, şehre ait değil.");
             }
             
-            // 2. GEÇMİŞ ZAMAN KONTROLÜ
+            // 4. GEÇMİŞ ZAMAN KONTROLÜ
             DateTime tripDateTime = tripDto.DepartureDate.ToDateTime(tripDto.DepartureTime);
-            
             if (tripDateTime < DateTime.Now)
             {
                 throw new ArgumentException("Geçmiş bir zamana sefer ekleyemezsiniz.");
             }
 
-            // 3. OTOBÜS MÜSAİT Mİ? (Direkt DTO verisini yolla)
+            // 5. OTOBÜS MÜSAİT Mİ?
             await CheckBusAvailability(tripDto.BusId, tripDto.DepartureDate, tripDto.DepartureTime);
 
-            // 4. KAYIT (Direkt DTO verisini ata)
+            // 6. KAYIT
             var newTrip = new Trip
             {
                 CompanyId = tripDto.CompanyId,
@@ -60,11 +68,10 @@ namespace BusBookingSystem.Application.Services.Impl
                 OriginDistrictId = tripDto.OriginDistrictId,
                 DestinationCityId = tripDto.DestinationCityId,
                 DestinationDistrictId = tripDto.DestinationDistrictId,
-                
                 DepartureDate = tripDto.DepartureDate, 
                 DepartureTime = tripDto.DepartureTime, 
-                
-                Price = tripDto.Price
+                Price = tripDto.Price,
+                CreatedDate = DateTime.Now
             };
 
             await _context.Trips.AddAsync(newTrip);
@@ -79,25 +86,53 @@ namespace BusBookingSystem.Application.Services.Impl
                 throw new Exception($"VERITABANI HATASI: {realError}");
             }
 
+            // 7. KAYDEDİLEN VERİYİ GERİ ÇEK (Full Include)
+            var createdTrip = await _context.Trips
+                .Include(t => t.OriginCity)
+                .Include(t => t.OriginDistrict)
+                .Include(t => t.DestinationCity)
+                .Include(t => t.DestinationDistrict)
+                .Include(t => t.Bus)
+                    .ThenInclude(b => b.Company)
+                .FirstOrDefaultAsync(t => t.Id == newTrip.Id);
+
+            if (createdTrip == null)
+            {
+                throw new Exception("Sefer oluşturuldu ancak detayları veritabanından çekilemedi.");
+            }
             return new TripDto 
             { 
-                Id = newTrip.Id,
-                CompanyId = newTrip.CompanyId,
-                BusId = newTrip.BusId,
-                Price = newTrip.Price,
-                OriginCityId = newTrip.OriginCityId,
-                DestinationCityId = newTrip.DestinationCityId,
-                DepartureDate = newTrip.DepartureDate.ToString("yyyy-MM-dd"), 
-                DepartureTime = newTrip.DepartureTime.ToString("HH:mm") // 24 Saat Formatı
+                Id = createdTrip.Id,
+                CompanyId = createdTrip.CompanyId,
+                CompanyName = createdTrip.Bus?.Company?.Name ?? "Firma Belirsiz",
+                
+                BusId = createdTrip.BusId,
+                Price = createdTrip.Price,
+                BusPlateNumber = createdTrip.Bus?.PlateNumber ?? "Plaka Yok",
+                
+                OriginCityId = createdTrip.OriginCityId,
+                OriginCityName = createdTrip.OriginCity?.Name ?? "",
+                OriginDistrictId = createdTrip.OriginDistrictId,
+                OriginDistrictName = createdTrip.OriginDistrict?.Name,
+                
+                DestinationCityId = createdTrip.DestinationCityId,
+                DestinationCityName = createdTrip.DestinationCity?.Name ?? "",
+                DestinationDistrictId = createdTrip.DestinationDistrictId,
+                DestinationDistrictName = createdTrip.DestinationDistrict?.Name,
+
+                DepartureDate = createdTrip.DepartureDate.ToString("yyyy-MM-dd"), 
+                DepartureTime = createdTrip.DepartureTime.ToString("HH:mm"),
+                CreatedDate = createdTrip.CreatedDate
             };
         }
-
         //  LİSTELEME (GetAll)
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
 
             var trips = await _context.Trips
+                .Include(t => t.Bus)           
+                    .ThenInclude(b => b.Company) 
                 .Include(t => t.OriginCity)
                 .Include(t => t.OriginDistrict)
                 .Include(t => t.DestinationCity)
@@ -108,7 +143,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .ThenBy(t => t.DepartureTime)
                 .ToListAsync();
 
-            return trips.ToDto();
+            return trips.ToDto(); 
         }
 
         //  ARAMA (SearchTrips)
@@ -158,6 +193,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 CompanyId = trip.CompanyId, 
                 BusId = trip.BusId,
                 CompanyName = trip.Bus?.Company?.Name ?? "Firma Belirsiz", 
+                BusPlateNumber = trip.Bus?.PlateNumber ?? "Plaka Yok",
                 
                 OriginCityId = trip.OriginCityId,
                 OriginCityName = trip.OriginCity?.Name ?? string.Empty,

@@ -27,6 +27,8 @@ namespace BusBookingSystem.Application.DTOs.Response
         public string? CompanyName { get; set; }
 
         public int SoldTicketCount { get; set; }
+
+        public string BusPlateNumber { get; set; } = string.Empty;
     }
 }
 

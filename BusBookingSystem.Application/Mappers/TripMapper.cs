@@ -12,6 +12,7 @@ namespace BusBookingSystem.Application.Mappers
                 Id = trip.Id,
                 CompanyId = trip.CompanyId,
                 BusId = trip.BusId,
+                BusPlateNumber = trip.Bus?.PlateNumber ?? string.Empty,
                 OriginCityId = trip.OriginCityId,
                 OriginCityName = trip.OriginCity?.Name ?? string.Empty,
                 OriginDistrictId = trip.OriginDistrictId,
@@ -24,6 +25,7 @@ namespace BusBookingSystem.Application.Mappers
                 DepartureTime = trip.DepartureTime.ToString("HH:mm:ss"),
                 Price = trip.Price,
                 CreatedDate = trip.CreatedDate,
+                CompanyName = trip.Bus?.Company?.Name ?? string.Empty,
                 SoldTicketCount = trip.Tickets != null ? trip.Tickets.Count : 0
             };
         }
