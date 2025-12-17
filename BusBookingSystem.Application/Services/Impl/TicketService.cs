@@ -380,16 +380,20 @@ namespace BusBookingSystem.Application.Services.Impl
         public async Task<IEnumerable<TicketDto>> GetPassengerTicketsAsync(int passengerId)
         {
             var tickets = await _context.Tickets
+                .Include(t => t.Passenger)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationDistrict)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus)
                         .ThenInclude(b => b.Company)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Tickets)
-                .Include(t => t.Passenger)
                 .Where(t => t.PassengerId == passengerId)
                 .Where(t => t.IsPaid || (t.IsReserved && t.ReservationExpiresAt > DateTime.Now))
                 .ToListAsync();
@@ -401,16 +405,20 @@ namespace BusBookingSystem.Application.Services.Impl
         public async Task<IEnumerable<TicketDto>> GetTripTicketsAsync(int tripId)
         {
             var tickets = await _context.Tickets
+                .Include(t => t.Passenger)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus)
-                    .ThenInclude(b => b.Company)
+                        .ThenInclude(b => b.Company)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Tickets)
-                .Include(t => t.Passenger)
                 .Where(t => t.TripId == tripId)
                 .OrderBy(t => t.SeatNumber)
                 .ToListAsync();
@@ -436,11 +444,15 @@ namespace BusBookingSystem.Application.Services.Impl
         public async Task<TicketDto?> GetTicketByIdAsync(int ticketId)
         {
             var ticket = await _context.Tickets
+                .Include(t => t.Passenger)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
-                .Include(t => t.Passenger)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationDistrict)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus)
                         .ThenInclude(b => b.Company)
@@ -450,12 +462,14 @@ namespace BusBookingSystem.Application.Services.Impl
 
             return ticket?.ToDto();
         }
+
+
+        // Cinsiyet Kuralı Kontrolü
         private async Task CheckGenderRuleAsync(int tripId, int seatNumber, int newPassengerGender, int? currentPassengerId = null)
         {
             // --- 2+1 OTOBÜS DÜZENİ MANTIĞI ---
-            // Izgara: [1][2]   [3]
-            //         [4][5]   [6]
-
+            // [1][2]   [3]
+            // [4][5]   [6]
             // Eğer koltuk numarası 3'ün katıysa (3, 6, 9, 12...) -> TEKLİ KOLTUKTUR.
             // Tekli koltukta cinsiyet kuralı olmaz. Direkt çık.
             if (seatNumber % 3 == 0) return;
@@ -520,10 +534,7 @@ namespace BusBookingSystem.Application.Services.Impl
                     throw new InvalidOperationException($"Koltuk {seatNumber} zaten dolu. Lütfen başka bir koltuk seçiniz.");
                 }
             }
-
-            // 3. Cinsiyet Kontrolü
             await CheckGenderRuleAsync(tripId, seatNumber, gender, null);
-
             return true;
         }
     }

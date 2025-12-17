@@ -118,6 +118,8 @@ namespace BusBookingSystem.Application.Services.Impl
                 CreatedDate = createdTrip.CreatedDate
             };
         }
+
+
         // Tüm Seferleri Getir
         public async Task<IEnumerable<TripDto>> GetAllTripsAsync()
         {
@@ -138,6 +140,7 @@ namespace BusBookingSystem.Application.Services.Impl
 
             return trips.ToDto();
         }
+
 
         //  Sefer Ara (Kalkış, Varış, Tarih, İlçe Seçenekli)
         public async Task<IEnumerable<TripDto>> SearchTripsAsync(int originId, int? originDistrictId, int destinationId, int? destinationDistrictId, string date)
@@ -163,6 +166,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Include(t => t.OriginDistrict)
                 .Include(t => t.DestinationCity)
                 .Include(t => t.DestinationDistrict)
+                .Include(t => t.Tickets)
                 .Where(t =>
                     t.OriginCityId == originId &&
                     t.DestinationCityId == destinationId &&
@@ -209,7 +213,13 @@ namespace BusBookingSystem.Application.Services.Impl
                 DepartureTime = trip.DepartureTime.ToString("HH:mm"),
 
                 Price = trip.Price,
-                SoldTicketCount = trip.Tickets != null ? trip.Tickets.Count(t => t.IsPaid || t.IsReserved) : 0
+                CreatedDate = trip.CreatedDate,
+                SoldTicketCount = trip.Tickets != null
+                    ? trip.Tickets.Count(t =>
+                        t.IsPaid || // Satılmış biletler
+                        (t.IsReserved && t.ReservationExpiresAt.HasValue && t.ReservationExpiresAt.Value > DateTime.Now)
+                    )
+                    : 0
             });
         }
 
@@ -231,6 +241,7 @@ namespace BusBookingSystem.Application.Services.Impl
             await _context.SaveChangesAsync();
             return true;
         }
+
 
         // Otobüs müsaitlik kontrolü
         private async Task CheckBusAvailability(int busId, DateOnly date, TimeOnly newTime)
