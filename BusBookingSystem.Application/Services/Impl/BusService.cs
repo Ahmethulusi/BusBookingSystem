@@ -35,7 +35,11 @@ namespace BusBookingSystem.Application.Services.Impl
             await _context.Buses.AddAsync(newBus);
             await _context.SaveChangesAsync();
 
-            return newBus.ToDto();
+            var createdBus = await _context.Buses
+                .Include(b => b.Company)
+                .FirstOrDefaultAsync(b => b.Id == newBus.Id);
+
+            return createdBus.ToDto();
         }
 
         public async Task<IEnumerable<BusDto>> GetAllBusesAsync()
