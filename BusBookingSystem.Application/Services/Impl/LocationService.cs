@@ -1,5 +1,6 @@
 // BusBookingSystem.Application/Services/LocationService.cs
 using BusBookingSystem.Application.DTOs.Response;
+using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,17 +22,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .OrderBy(c => c.Name)
                 .ToListAsync();
 
-            return cities.Select(city => new CityDto
-            {
-                Id = city.Id,
-                Name = city.Name,
-                Districts = city.Districts.Select(d => new DistrictDto
-                {
-                    Id = d.Id,
-                    CityId = d.CityId,
-                    Name = d.Name
-                }).OrderBy(d => d.Name).ToList()
-            });
+            return cities.ToDto();
         }
 
         public async Task<IEnumerable<DistrictDto>> GetDistrictsByCityIdAsync(int cityId)
@@ -47,12 +38,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .OrderBy(d => d.Name)
                 .ToListAsync();
 
-            return districts.Select(district => new DistrictDto
-            {
-                Id = district.Id,
-                CityId = district.CityId,
-                Name = district.Name
-            });
+            return districts.ToDto();
         }
     }
 }

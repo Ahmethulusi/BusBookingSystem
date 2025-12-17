@@ -87,36 +87,15 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Include(t => t.DestinationDistrict)
                 .Include(t => t.Bus)
                     .ThenInclude(b => b.Company)
+                .Include(t => t.Tickets)
                 .FirstOrDefaultAsync(t => t.Id == newTrip.Id);
 
             if (createdTrip == null)
             {
                 throw new Exception("Sefer oluşturuldu ancak detayları veritabanından çekilemedi.");
             }
-            return new TripDto
-            {
-                Id = createdTrip.Id,
-                CompanyId = createdTrip.CompanyId,
-                CompanyName = createdTrip.Bus?.Company?.Name ?? "Firma Belirsiz",
-
-                BusId = createdTrip.BusId,
-                Price = createdTrip.Price,
-                BusPlateNumber = createdTrip.Bus?.PlateNumber ?? "Plaka Yok",
-
-                OriginCityId = createdTrip.OriginCityId,
-                OriginCityName = createdTrip.OriginCity?.Name ?? "",
-                OriginDistrictId = createdTrip.OriginDistrictId,
-                OriginDistrictName = createdTrip.OriginDistrict?.Name,
-
-                DestinationCityId = createdTrip.DestinationCityId,
-                DestinationCityName = createdTrip.DestinationCity?.Name ?? "",
-                DestinationDistrictId = createdTrip.DestinationDistrictId,
-                DestinationDistrictName = createdTrip.DestinationDistrict?.Name,
-
-                DepartureDate = createdTrip.DepartureDate.ToString("yyyy-MM-dd"),
-                DepartureTime = createdTrip.DepartureTime.ToString("HH:mm"),
-                CreatedDate = createdTrip.CreatedDate
-            };
+            
+            return createdTrip.ToDto();
         }
 
 
@@ -191,36 +170,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .OrderBy(t => t.DepartureTime)
                 .ToListAsync();
 
-            return trips.Select(trip => new TripDto
-            {
-                Id = trip.Id,
-                CompanyId = trip.CompanyId,
-                BusId = trip.BusId,
-                CompanyName = trip.Bus?.Company?.Name ?? "Firma Belirsiz",
-                BusPlateNumber = trip.Bus?.PlateNumber ?? "Plaka Yok",
-
-                OriginCityId = trip.OriginCityId,
-                OriginCityName = trip.OriginCity?.Name ?? string.Empty,
-                OriginDistrictId = trip.OriginDistrictId,
-                OriginDistrictName = trip.OriginDistrict?.Name,
-
-                DestinationCityId = trip.DestinationCityId,
-                DestinationCityName = trip.DestinationCity?.Name ?? string.Empty,
-                DestinationDistrictId = trip.DestinationDistrictId,
-                DestinationDistrictName = trip.DestinationDistrict?.Name,
-
-                DepartureDate = trip.DepartureDate.ToString("yyyy-MM-dd"),
-                DepartureTime = trip.DepartureTime.ToString("HH:mm"),
-
-                Price = trip.Price,
-                CreatedDate = trip.CreatedDate,
-                SoldTicketCount = trip.Tickets != null
-                    ? trip.Tickets.Count(t =>
-                        t.IsPaid || // Satılmış biletler
-                        (t.IsReserved && t.ReservationExpiresAt.HasValue && t.ReservationExpiresAt.Value > DateTime.Now)
-                    )
-                    : 0
-            });
+            return trips.ToDto();
         }
 
         // Sefer Sil
