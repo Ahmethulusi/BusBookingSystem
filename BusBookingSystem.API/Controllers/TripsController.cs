@@ -1,13 +1,15 @@
 // BusBookingSystem.API/Controllers/TripsController.cs
-using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.DTOs.Request;
+using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BusBookingSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    
+    [Authorize]
     public class TripsController : ControllerBase
     {
         private readonly ITripService _tripService;
@@ -20,33 +22,72 @@ namespace BusBookingSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllTrips()
         {
-            // Servisten tüm seferleri al
-            var trips = await _tripService.GetAllTripsAsync();
-
-            // Başarılı (200 OK) ile listeyi döndür
-            return Ok(trips);
+            try
+            {
+                var trips = await _tripService.GetAllTripsAsync();
+                return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<TripDto>>.Fail(ex.Message));
+            }
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateTrip([FromBody] CreateTripDto request)
         {
             try
             {
-                // Servise işi devret
-                await _tripService.AddTripAsync(request);
-
-                // Başarılı (200 OK) dön
-                return Ok(new { message = "Sefer başarıyla oluşturuldu!" });
+                var createdTrip = await _tripService.AddTripAsync(request);
+                return Ok(Response<TripDto>.Successful(createdTrip, "Sefer başarıyla oluşturulmuştur"));
             }
             catch (ArgumentException ex)
             {
-                // Bus bulunamadı hatası
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Response<TripDto>.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                // Diğer hatalar
-                return StatusCode(500, new { message = "Sefer oluşturulurken bir hata oluştu.", error = ex.Message });
+                return BadRequest(Response<TripDto>.Fail(ex.Message));
+            }
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchTrips(
+            [FromQuery] int originId,
+            [FromQuery] int? originDistrictId,
+             [FromQuery] int destinationId,
+             [FromQuery] int? destinationDistrictId,
+              [FromQuery] DateTime date)
+        {
+            try
+            {
+                var trips = await _tripService.SearchTripsAsync(originId, originDistrictId, destinationId, destinationDistrictId, date.ToString("yyyy-MM-dd"));
+                return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<TripDto>>.Fail(ex.Message));
+            }
+        }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrip(int id)
+        {
+            try
+            {
+                var result = await _tripService.DeleteTripAsync(id);
+                if (!result)
+                    return NotFound(Response<bool>.Fail("Sefer bulunamadı"));
+
+                return Ok(Response<bool>.Successful(true, "Sefer başarıyla silindi"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
             }
         }
     }

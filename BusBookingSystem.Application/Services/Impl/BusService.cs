@@ -1,55 +1,55 @@
 // BusBookingSystem.Application/Services/BusService.cs
 using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.Mappers;
 using BusBookingSystem.Core.Entities;
 using BusBookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace BusBookingSystem.Application.Services
+namespace BusBookingSystem.Application.Services.Impl
 {
     public class BusService : IBusService
     {
         private readonly AppDbContext _context;
 
-        // Dependency Injection ile DbContext'i istiyoruz
         public BusService(AppDbContext context)
         {
             _context = context;
         }
 
-        public async Task AddBusAsync(CreateBusDto busDto)
+        public async Task<BusDto> AddBusAsync(CreateBusDto busDto)
         {
-            // 1. DTO'yu Entity'e çevir (Manuel Mapping)
+            var companyExists = await _context.Companies.AnyAsync(c => c.Id == busDto.CompanyId);
+            if (!companyExists)
+            {
+                throw new ArgumentException($"Company with ID {busDto.CompanyId} not found.");
+            }
+
             var newBus = new Bus
             {
                 PlateNumber = busDto.PlateNumber,
                 Brand = busDto.Brand,
                 TotalSeatCount = busDto.TotalSeatCount,
-                // CreatedDate otomatik atanıyor (BaseEntity'den)
+                CompanyId = busDto.CompanyId,
             };
 
-            // 2. Veritabanına ekle
             await _context.Buses.AddAsync(newBus);
-            
-            // 3. Değişiklikleri kaydet
             await _context.SaveChangesAsync();
+
+            var createdBus = await _context.Buses
+                .Include(b => b.Company)
+                .FirstOrDefaultAsync(b => b.Id == newBus.Id);
+
+            return createdBus.ToDto();
         }
 
         public async Task<IEnumerable<BusDto>> GetAllBusesAsync()
         {
-            // Veritabanından tüm otobüsleri çek
             var buses = await _context.Buses
+                .Include(b => b.Company)
                 .OrderBy(b => b.CreatedDate)
                 .ToListAsync();
 
-            // Entity'leri DTO'ya çevir (Mapping)
-            return buses.Select(bus => new BusDto
-            {
-                Id = bus.Id,
-                PlateNumber = bus.PlateNumber,
-                Brand = bus.Brand,
-                TotalSeatCount = bus.TotalSeatCount,
-                CreatedDate = bus.CreatedDate
-            });
+            return buses.ToDto();
         }
     }
 }

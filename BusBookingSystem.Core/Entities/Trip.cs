@@ -2,14 +2,28 @@ namespace BusBookingSystem.Core.Entities
 {
     public class Trip : BaseEntity
     {
-        public int BusId { get; set; }
-        public Bus Bus { get; set; } // İlişki
+        public int CompanyId { get; set; }
+        public Company Company { get; set; } = null!;
 
-        public string Origin { get; set; }
-        public string Destination { get; set; }
-        public DateTime DepartureDate { get; set; }
+        public int BusId { get; set; }
+        public Bus Bus { get; set; } = null!;
+
+        // Origin (Kalkış) bilgileri
+        public int OriginCityId { get; set; }
+        public City OriginCity { get; set; } = null!;
+        public int? OriginDistrictId { get; set; } // Nullable - İlçe opsiyonel
+        public District? OriginDistrict { get; set; }
+
+        // Destination (Varış) bilgileri
+        public int DestinationCityId { get; set; }
+        public City DestinationCity { get; set; } = null!;
+        public int? DestinationDistrictId { get; set; } // Nullable - İlçe opsiyonel
+        public District? DestinationDistrict { get; set; }
+
+        public DateOnly DepartureDate { get; set; }
+        public TimeOnly DepartureTime { get; set; }
         public decimal Price { get; set; }
 
-        public ICollection<Ticket> Tickets { get; set; }
+        public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 }

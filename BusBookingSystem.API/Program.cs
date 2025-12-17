@@ -1,31 +1,128 @@
 // BusBookingSystem.API/Program.cs
 
+using System.Text;
 using BusBookingSystem.Infrastructure.Data;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. POSTGRESQL AYARI (BU KISIM EKLENECEK)
-// -------------------------------------------------------------------------
-// Postgres'in tarih formatı hatasını engellemek için:
+// 1. POSTGRESQL AYARI
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-// DbContext'i sisteme tanıtıyoruz (Dependency Injection)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
-    
-// -------------------------------------------------------------------------
-builder.Services.AddScoped<BusBookingSystem.Application.Services.IBusService, BusBookingSystem.Application.Services.BusService>();
-builder.Services.AddScoped<BusBookingSystem.Application.Services.ITripService, BusBookingSystem.Application.Services.TripService>();
+
+// 2. JWT AUTHENTICATION AYARI
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"];
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var result = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                success = false,
+                message = "Yetkiniz yok. Bu işlem için giriş yapmanız gerekmektedir."
+            });
+            return context.Response.WriteAsync(result);
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = 403;
+            context.Response.ContentType = "application/json";
+            var result = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                success = false,
+                message = "Yetkiniz yok. Bu işlem için admin yetkisi gereklidir."
+            });
+            return context.Response.WriteAsync(result);
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// 3. SERVICES
+builder.Services.AddScoped<BusBookingSystem.Application.Services.IBusService, BusBookingSystem.Application.Services.Impl.BusService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ITripService, BusBookingSystem.Application.Services.Impl.TripService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.IPassengerService, BusBookingSystem.Application.Services.Impl.PassengerService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ILocationService, BusBookingSystem.Application.Services.Impl.LocationService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.IAuthService, BusBookingSystem.Application.Services.Impl.AuthService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ITicketService, BusBookingSystem.Application.Services.Impl.TicketService>();
+builder.Services.AddScoped<BusBookingSystem.Application.Services.ICompanyService, BusBookingSystem.Application.Services.Impl.CompanyService>();
+
+// FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<BusBookingSystem.Application.Validators.CreatePassengerDtoValidator>();
+
 builder.Services.AddControllers();
+
+builder.Services.AddFluentValidationAutoValidation(config =>
+{
+    config.DisableDataAnnotationsValidation = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// 4. SWAGGER CONFIGURATION WITH JWT
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Bus Booking System API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
-// Pipeline (Middleware) Ayarları
+// 5. Pipeline (Middleware) Ayarları
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -33,7 +130,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// 6. SEED DATA - Uygulama başlarken şehirleri ekle
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<AppDbContext>();
+    await BusBookingSystem.Infrastructure.Data.DbSeeder.SeedCitiesAsync(context);
+}
 
 app.Run();

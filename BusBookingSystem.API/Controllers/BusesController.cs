@@ -1,40 +1,52 @@
 // BusBookingSystem.API/Controllers/BusesController.cs
 using BusBookingSystem.Application.DTOs;
+using BusBookingSystem.Application.DTOs.Response;
 using BusBookingSystem.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BusBookingSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class BusesController : ControllerBase
     {
         private readonly IBusService _busService;
 
-        // Servisi enjekte ediyoruz
         public BusesController(IBusService busService)
         {
             _busService = busService;
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllBuses()
         {
-            // Servisten tüm otobüsleri al
-            var buses = await _busService.GetAllBusesAsync();
-            
-            // Başarılı (200 OK) ile listeyi döndür
-            return Ok(buses);
+            try
+            {
+                var buses = await _busService.GetAllBusesAsync();
+                return Ok(Response<IEnumerable<BusDto>>.Successful(buses));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<IEnumerable<BusDto>>.Fail(ex.Message));
+            }
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateBus([FromBody] CreateBusDto request)
         {
-            // Servise işi devret
-            await _busService.AddBusAsync(request);
-            
-            // Başarılı (200 OK) dön
-            return Ok(new { message = "Otobüs başarıyla eklendi!" });
+            try
+            {
+                var createdBus = await _busService.AddBusAsync(request);
+                return Ok(Response<BusDto>.Successful(createdBus, "Otobüs başarıyla oluşturulmuştur"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<BusDto>.Fail(ex.Message));
+            }
         }
     }
 }
