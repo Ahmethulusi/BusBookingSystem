@@ -93,7 +93,7 @@ namespace BusBookingSystem.API.Controllers
             }
         }
 
-        // Belirli bir koltuğun uygunluğunu kontrol et
+        // Belirli bir seferdeki belirli bir koltuğun uygunluğunu kontrol et
         [HttpGet("trips/{tripId}/seats/{seatNumber}/available")]
         public async Task<IActionResult> IsSeatAvailable(int tripId, int seatNumber)
         {
@@ -183,7 +183,6 @@ namespace BusBookingSystem.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Kural hatası varsa 400 dön ve mesajı gönder
                 return BadRequest(Response<bool>.Fail(ex.Message));
             }
             catch (Exception ex)

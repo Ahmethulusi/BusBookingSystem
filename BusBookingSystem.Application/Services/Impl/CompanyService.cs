@@ -19,23 +19,17 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<CompanyDto> AddCompanyAsync(CreateCompanyDto companyDto)
         {
-            // DTO'yu Entity'ye çevir
             var newCompany = new Company
             {
                 Name = companyDto.Name,
                 Phone = companyDto.Phone,
                 Email = companyDto.Email,
                 Address = companyDto.Address,
-                // CreatedDate otomatik atanıyor (BaseEntity'den)
             };
 
-            // Veritabanına ekle
             await _context.Companies.AddAsync(newCompany);
-
-            // Değişiklikleri kaydet
             await _context.SaveChangesAsync();
 
-            // Oluşturulan company'yi DTO olarak döndür
             return newCompany.ToDto();
         }
 

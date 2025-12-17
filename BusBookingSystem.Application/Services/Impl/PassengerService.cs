@@ -19,7 +19,6 @@ namespace BusBookingSystem.Application.Services.Impl
         // Yolcu Ekle
         public async Task<PassengerDto> AddPassengerAsync(CreatePassengerDto passengerDto)
         {
-            // Yolcu zaten mevcut mu kontrol et
             var existingPassenger = await _context.Passengers
                 .FirstOrDefaultAsync(p => p.TcNo == passengerDto.TcNo || p.Email == passengerDto.Email);
 
@@ -30,7 +29,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 if (existingPassenger.Email == passengerDto.Email)
                     throw new InvalidOperationException($"Bu e-posta adresi ({passengerDto.Email}) ile kayıtlı yolcu zaten mevcut.");
             }
-            // Yeni yolcu oluştur
+
             var newPassenger = new Passenger
             {
                 FirstName = passengerDto.FirstName,

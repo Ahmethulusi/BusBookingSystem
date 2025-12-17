@@ -52,7 +52,7 @@ namespace BusBookingSystem.API.Controllers
             }
         }
 
-     [HttpGet("search")]
+        [HttpGet("search")]
         public async Task<IActionResult> SearchTrips(
             [FromQuery] int originId,
             [FromQuery] int? originDistrictId,
@@ -62,35 +62,34 @@ namespace BusBookingSystem.API.Controllers
         {
             try
             {
-               var trips = await _tripService.SearchTripsAsync(originId, originDistrictId, destinationId, destinationDistrictId, date.ToString("yyyy-MM-dd"));
-            return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
+                var trips = await _tripService.SearchTripsAsync(originId, originDistrictId, destinationId, destinationDistrictId, date.ToString("yyyy-MM-dd"));
+                return Ok(Response<IEnumerable<TripDto>>.Successful(trips));
             }
             catch (Exception ex)
             {
                 return BadRequest(Response<IEnumerable<TripDto>>.Fail(ex.Message));
             }
         }
-[HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTrip(int id)
-    {
-        try
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrip(int id)
         {
-            var result = await _tripService.DeleteTripAsync(id);
-            if (!result)
-                return NotFound(Response<bool>.Fail("Sefer bulunamadı"));
+            try
+            {
+                var result = await _tripService.DeleteTripAsync(id);
+                if (!result)
+                    return NotFound(Response<bool>.Fail("Sefer bulunamadı"));
 
-            return Ok(Response<bool>.Successful(true, "Sefer başarıyla silindi"));
+                return Ok(Response<bool>.Successful(true, "Sefer başarıyla silindi"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Response<bool>.Fail(ex.Message));
+            }
         }
-        catch (InvalidOperationException ex)
-        {
-            // Bilet satılmışsa 400 hatası ve mesajı döner
-            return BadRequest(Response<bool>.Fail(ex.Message));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(Response<bool>.Fail(ex.Message));
-        }
-    }
     }
 }
 

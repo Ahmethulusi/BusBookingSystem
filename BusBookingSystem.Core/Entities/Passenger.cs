@@ -11,8 +11,6 @@ namespace BusBookingSystem.Core.Entities
         public string PhoneNumber { get; set; } = string.Empty;
         public Gender Gender { get; set; }
         public DateTime DateOfBirth { get; set; }
-
-        // Navigation Properties
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 }

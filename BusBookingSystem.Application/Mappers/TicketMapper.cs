@@ -8,15 +8,13 @@ namespace BusBookingSystem.Application.Mappers
     {
         public static TicketDto ToDto(this Ticket ticket)
         {
-            // Eğer biletin kendisi yoksa null dön
             if (ticket == null) return null!;
 
-            // Veritabanında 'Rezerve' yazsa bile, saati geçtiyse 'Rezerve Değildir' diyelim.
+            // Veritabanında 'Rezerve' yazsa bile, saati geçtiyse 'Rezerve Değildir' olarak göster
             bool isActuallyReserved = ticket.IsReserved;
-            
+
             if (ticket.IsReserved && ticket.ReservationExpiresAt.HasValue)
             {
-                // Eğer şimdiki zaman, bitiş süresinden büyükse -> Süre dolmuş demektir.
                 if (DateTime.Now > ticket.ReservationExpiresAt.Value)
                 {
                     isActuallyReserved = false; // Kullanıcıya "Boş" göster
@@ -33,38 +31,10 @@ namespace BusBookingSystem.Application.Mappers
                 ReservationExpiresAt = ticket.ReservationExpiresAt,
                 CreatedDate = ticket.CreatedDate,
 
-                // --- 1. SEFER KUTUSU (Trip) ---
-                Trip = ticket.Trip != null ? new TripDto
-                {
-                    Id = ticket.Trip.Id,
-                    BusId = ticket.Trip.BusId,
-                    OriginCityId = ticket.Trip.OriginCityId,
-                    DestinationCityId = ticket.Trip.DestinationCityId,
-                    // CompanyId eğer Trip tablosunda yoksa Bus üzerinden alınır
-                    CompanyId = ticket.Trip.Bus != null ? ticket.Trip.Bus.CompanyId : 0,
-                    BusPlateNumber = ticket.Trip.Bus?.PlateNumber ?? "",
-                    OriginCityName = ticket.Trip.OriginCity?.Name ?? "Bilinmiyor",
-                    DestinationCityName = ticket.Trip.DestinationCity?.Name ?? "Bilinmiyor",
-                    DepartureDate = ticket.Trip.DepartureDate.ToString("yyyy-MM-dd"),
-                    DepartureTime = ticket.Trip.DepartureTime.ToString(),
-                    Price = ticket.Trip.Price,
-                    SoldTicketCount = ticket.Trip.Tickets != null ? ticket.Trip.Tickets.Count : 0,
-                    
-                    CompanyName = ticket.Trip.Bus?.Company?.Name ?? "Firma Belirsiz"
-                } : null!,
 
-                // --- 2. YOLCU KUTUSU (Passenger) ---
-                Passenger = ticket.Passenger != null ? new PassengerDto
-                {
-                    Id = ticket.Passenger.Id,
-                    FirstName = ticket.Passenger.FirstName ?? "", 
-                    LastName = ticket.Passenger.LastName ?? "",
-                    TcNo = ticket.Passenger.TcNo,
-                    Email = ticket.Passenger.Email,
-                    PhoneNumber = ticket.Passenger.PhoneNumber,
-                    Gender = ticket.Passenger.Gender,
-                    DateOfBirth = ticket.Passenger.DateOfBirth
-                } : null!
+                Trip = ticket.Trip?.ToDto(),
+
+                Passenger = ticket.Passenger?.ToDto()
             };
         }
 
@@ -72,7 +42,7 @@ namespace BusBookingSystem.Application.Mappers
         {
             // Liste boşsa hata vermesin
             if (tickets == null) return new List<TicketDto>();
-            
+
             return tickets.Select(ticket => ticket.ToDto());
         }
     }

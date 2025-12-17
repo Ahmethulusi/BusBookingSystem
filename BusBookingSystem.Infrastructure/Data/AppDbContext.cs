@@ -23,8 +23,8 @@ namespace BusBookingSystem.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // --- MEVCUT İLİŞKİLER (DOKUNMA) ---
-            
+            // İlişkiler
+
             // Company - Bus relationship (One-to-Many)
             modelBuilder.Entity<Bus>()
                 .HasOne(b => b.Company)
@@ -111,7 +111,7 @@ namespace BusBookingSystem.Infrastructure.Data
                 .HasForeignKey(t => t.DestinationDistrictId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            
+
             var dateOnlyConverter = new ValueConverter<DateOnly, DateTime>(
                 d => d.ToDateTime(TimeOnly.MinValue),
                 d => DateOnly.FromDateTime(d));
@@ -135,21 +135,19 @@ namespace BusBookingSystem.Infrastructure.Data
                     }
                 }
             }
-        
-
             base.OnModelCreating(modelBuilder);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var entries = ChangeTracker.Entries()
-                .Where(e => e.Entity is BaseEntity && 
+                .Where(e => e.Entity is BaseEntity &&
                             (e.State == EntityState.Added || e.State == EntityState.Modified));
 
             foreach (var entityEntry in entries)
             {
                 var entity = (BaseEntity)entityEntry.Entity;
-                
+
                 if (entityEntry.State == EntityState.Added)
                 {
                     if (entity.CreatedDate == default(DateTime))

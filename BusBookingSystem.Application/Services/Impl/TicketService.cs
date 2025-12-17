@@ -34,9 +34,8 @@ namespace BusBookingSystem.Application.Services.Impl
         }
 
         // Koltuk rezerve et
-       public async Task<TicketDto> ReserveTicketAsync(int tripId, ReserveTicketDto ticketDto)
+        public async Task<TicketDto> ReserveTicketAsync(int tripId, ReserveTicketDto ticketDto)
         {
-            // Genel temizlik (Yine de yapalım)
             await CleanExpiredReservationsAsync(tripId);
 
             var trip = await _context.Trips
@@ -51,7 +50,6 @@ namespace BusBookingSystem.Application.Services.Impl
             if (ticketDto.SeatNumber < 1 || ticketDto.SeatNumber > trip.Bus.TotalSeatCount)
                 throw new InvalidOperationException($"Geçersiz koltuk numarası. Bu otobüste 1-{trip.Bus.TotalSeatCount} arası koltuk bulunmaktadır");
 
-            // 🔥 KRİTİK DÜZELTME BURADA: KOLTUK KONTROLÜ
             var existingTicket = await _context.Tickets
                 .FirstOrDefaultAsync(t => t.TripId == tripId && t.SeatNumber == ticketDto.SeatNumber);
 
@@ -59,23 +57,19 @@ namespace BusBookingSystem.Application.Services.Impl
             {
                 if (existingTicket.IsPaid)
                 {
-                    // Satılmışsa yapacak bir şey yok, hata fırlat.
                     throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk satın alınmış durumda");
                 }
                 else if (existingTicket.IsReserved)
                 {
-                    // Rezerve ama SÜRESİNE BAKALIM
                     if (existingTicket.ReservationExpiresAt > DateTime.Now)
                     {
-                        // Süresi hala var -> HATA FIRLAT
                         throw new InvalidOperationException($"{ticketDto.SeatNumber} numaralı koltuk rezerve edilmiş durumda");
                     }
                     else
                     {
-                        // Süresi DOLMUŞ! -> SİL VE DEVAM ET (Engel olma)
+                        // Süresi dolan rezervesyonu sil
                         _context.Tickets.Remove(existingTicket);
                         await _context.SaveChangesAsync();
-                        // Döngüden çıktık, kod aşağıya akmaya devam edecek ve yeni rezervasyon yapılacak. ✅
                     }
                 }
             }
@@ -84,7 +78,26 @@ namespace BusBookingSystem.Application.Services.Impl
             if (passenger == null)
                 throw new InvalidOperationException("Yolcu bulunamadı");
 
-            // Cinsiyet Kuralı (Kendi yanına oturabilme fix'i ile)
+            // Aynı yolcu bu seferde zaten bilet almış mı kontrol et
+            var passengerExistingTicket = await _context.Tickets
+                .FirstOrDefaultAsync(t => t.TripId == tripId && t.PassengerId == ticketDto.PassengerId);
+
+            if (passengerExistingTicket != null)
+            {
+                // Eğer expire olmuş bir rezervasyon ise, onu sil ve devam et
+                if (passengerExistingTicket.IsReserved && !passengerExistingTicket.IsPaid &&
+                    passengerExistingTicket.ReservationExpiresAt < DateTime.Now)
+                {
+                    _context.Tickets.Remove(passengerExistingTicket);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    throw new InvalidOperationException("Bu yolcu bu sefer için zaten bir bilete sahip. Aynı yolcu aynı seferde birden fazla bilet alamaz.");
+                }
+            }
+
+            // Cinsiyet Kuralı 
             await CheckGenderRuleAsync(tripId, ticketDto.SeatNumber, (int)passenger.Gender, passenger.Id);
 
             // Yeni Rezervasyon Oluştur (5 Dakika Süreli)
@@ -96,19 +109,22 @@ namespace BusBookingSystem.Application.Services.Impl
                 PaidAmount = 0,
                 IsReserved = true,
                 IsPaid = false,
-                ReservationExpiresAt = DateTime.Now.AddMinutes(5), // 5 Dakika
+                ReservationExpiresAt = DateTime.Now.AddMinutes(5),
                 CreatedDate = DateTime.Now
             };
 
             await _context.Tickets.AddAsync(ticket);
             await _context.SaveChangesAsync();
 
-            // Dönüş İçin Full Data Çekme (Hata almamak için Include'lar tam)
             var createdTicket = await _context.Tickets
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationDistrict)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus)
                         .ThenInclude(b => b.Company)
@@ -127,7 +143,11 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationDistrict)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus)
                         .ThenInclude(b => b.Company)
@@ -167,7 +187,6 @@ namespace BusBookingSystem.Application.Services.Impl
         // Direkt satın alma 
         public async Task<TicketDto> PurchaseTicketAsync(int tripId, CreateTicketDto ticketDto)
         {
-            // Genel temizlik
             await CleanExpiredReservationsAsync(tripId);
 
             var trip = await _context.Trips
@@ -182,7 +201,6 @@ namespace BusBookingSystem.Application.Services.Impl
             if (ticketDto.SeatNumber < 1 || ticketDto.SeatNumber > trip.Bus.TotalSeatCount)
                 throw new InvalidOperationException($"Geçersiz koltuk numarası. Bu otobüste 1-{trip.Bus.TotalSeatCount} arası koltuk bulunmaktadır");
 
-            // 🔥 KRİTİK DÜZELTME BURADA DA VAR
             var existingTicket = await _context.Tickets
                 .FirstOrDefaultAsync(t => t.TripId == tripId && t.SeatNumber == ticketDto.SeatNumber);
 
@@ -211,14 +229,30 @@ namespace BusBookingSystem.Application.Services.Impl
             if (passenger == null)
                 throw new InvalidOperationException("Yolcu bulunamadı");
 
+            // Aynı yolcu bu seferde zaten bilet almış mı kontrol et
+            var passengerExistingTicket = await _context.Tickets
+                .FirstOrDefaultAsync(t => t.TripId == tripId && t.PassengerId == ticketDto.PassengerId);
+
+            if (passengerExistingTicket != null)
+            {
+                if (passengerExistingTicket.IsReserved && !passengerExistingTicket.IsPaid &&
+                    passengerExistingTicket.ReservationExpiresAt < DateTime.Now)
+                {
+                    _context.Tickets.Remove(passengerExistingTicket);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    throw new InvalidOperationException("Bu yolcu bu sefer için zaten bir bilete sahip. Aynı yolcu aynı seferde birden fazla bilet alamaz.");
+                }
+            }
+
             // Cinsiyet Kuralı
             await CheckGenderRuleAsync(tripId, ticketDto.SeatNumber, (int)passenger.Gender, passenger.Id);
 
-            // Ödeme Tutar Kontrolü
             if (ticketDto.PaidAmount < trip.Price)
                 throw new InvalidOperationException($"Yetersiz ödeme! Bilet fiyatı: {trip.Price} TL, Ödenen tutar: {ticketDto.PaidAmount} TL");
 
-            // Satış Kaydı Oluştur
             var ticket = new Ticket
             {
                 TripId = tripId,
@@ -226,7 +260,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 SeatNumber = ticketDto.SeatNumber,
                 PaidAmount = ticketDto.PaidAmount,
                 IsReserved = false,
-                IsPaid = true, // Direkt ödendi
+                IsPaid = true,
                 ReservationExpiresAt = null,
                 CreatedDate = DateTime.Now
             };
@@ -234,12 +268,15 @@ namespace BusBookingSystem.Application.Services.Impl
             await _context.Tickets.AddAsync(ticket);
             await _context.SaveChangesAsync();
 
-            // Dönüş Verisi (Include'lar tam)
             var createdTicket = await _context.Tickets
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.OriginCity)
                 .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.OriginDistrict)
+                .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
+                .Include(t => t.Trip)
+                    .ThenInclude(tr => tr.DestinationDistrict)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Bus)
                         .ThenInclude(b => b.Company)
@@ -265,23 +302,20 @@ namespace BusBookingSystem.Application.Services.Impl
                 throw new InvalidOperationException("Sefer bulunamadı");
 
             var totalSeats = trip.Bus.TotalSeatCount;
-            var occupiedSeats = trip.Tickets.Count;
-            var availableSeats = totalSeats - occupiedSeats;
-
             var seats = new List<SeatAvailabilityDto>();
 
             // Tüm koltukları listele
             for (int seatNumber = 1; seatNumber <= totalSeats; seatNumber++)
             {
                 var ticket = trip.Tickets.FirstOrDefault(t => t.SeatNumber == seatNumber);
-                
-                // Eğer bilet var AMA (Rezerve VE Süresi Dolmuşsa) -> Onu yok say.
+
+                // Eğer bilet var Ama Rezerve ve süresi dolmuşsa onu yok say.
                 if (ticket != null && ticket.IsReserved && !ticket.IsPaid && ticket.ReservationExpiresAt < DateTime.Now)
                 {
-                    ticket = null; // Bilet yokmuş gibi davran.
+                    ticket = null;
                 }
 
-                string seatStatus = "Available"; // Varsayılan: Boş
+                string seatStatus = "Available";
 
                 if (ticket != null)
                 {
@@ -291,21 +325,19 @@ namespace BusBookingSystem.Application.Services.Impl
                     }
                     else if (ticket.IsReserved)
                     {
-                        // Yukarıda süresi dolanları null yaptığımız için,
-                        // buraya düşenlerin süresi kesinlikle dolmamıştır.
                         seatStatus = "Reserved";
                     }
                 }
 
-               seats.Add(new SeatAvailabilityDto
+                seats.Add(new SeatAvailabilityDto
                 {
                     SeatNumber = seatNumber,
-                    IsAvailable = (seatStatus == "Available"), 
-                    
-                    PassengerName = (seatStatus == "Sold" || seatStatus == "Reserved") && ticket?.Passenger != null 
-                        ? $"{ticket.Passenger.FirstName} {ticket.Passenger.LastName}" 
-                        : null,
-                        
+                    IsAvailable = (seatStatus == "Available"),
+
+                    PassengerName = (seatStatus == "Sold" || seatStatus == "Reserved") && ticket?.Passenger != null
+                         ? $"{ticket.Passenger.FirstName} {ticket.Passenger.LastName}"
+                         : null,
+
                     Status = seatStatus,
                     ReservationExpiresAt = (seatStatus == "Reserved") ? ticket?.ReservationExpiresAt : null,
 
@@ -314,8 +346,6 @@ namespace BusBookingSystem.Application.Services.Impl
                     Gender = ticket?.Passenger != null ? (int)ticket.Passenger.Gender : 0
                 });
             }
-            
-            // Occupied (Dolu) koltuk sayısını yeniden hesaplayalım ki doğru görünsün
             var occupiedCount = seats.Count(s => s.Status != "Available");
             var availableCount = totalSeats - occupiedCount;
 
@@ -323,7 +353,7 @@ namespace BusBookingSystem.Application.Services.Impl
             {
                 TripId = tripId,
                 TotalSeats = totalSeats,
-                AvailableSeats = availableSeats,
+                AvailableSeats = availableCount,
                 OccupiedSeats = occupiedCount,
                 Seats = seats
             };
@@ -331,22 +361,18 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<bool> IsSeatAvailableAsync(int tripId, int seatNumber)
         {
-            // Temizliği yine de çağıralım
             await CleanExpiredReservationsAsync(tripId);
 
             var ticket = await _context.Tickets
                 .FirstOrDefaultAsync(t => t.TripId == tripId && t.SeatNumber == seatNumber);
 
-            // Bilet hiç yoksa -> MÜSAİT
             if (ticket == null) return true;
 
-            // Bilet var ama Ödenmemiş (Rezerve) VE Süresi Dolmuş -> MÜSAİT (YOK SAY)
+            // Rezerve ama süresi dolmuşsa -> BOŞ
             if (ticket.IsReserved && !ticket.IsPaid && ticket.ReservationExpiresAt < DateTime.Now)
             {
-                return true; 
+                return true;
             }
-
-            // Diğer tüm durumlarda (Satılmış veya Aktif Rezerve) -> DOLU
             return false;
         }
 
@@ -380,7 +406,7 @@ namespace BusBookingSystem.Application.Services.Impl
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.DestinationCity)
                 .Include(t => t.Trip)
-                    .ThenInclude(tr => tr.Bus) 
+                    .ThenInclude(tr => tr.Bus)
                     .ThenInclude(b => b.Company)
                 .Include(t => t.Trip)
                     .ThenInclude(tr => tr.Tickets)
@@ -424,12 +450,12 @@ namespace BusBookingSystem.Application.Services.Impl
 
             return ticket?.ToDto();
         }
-        private async Task CheckGenderRuleAsync(int tripId, int seatNumber, int newPassengerGender,int? currentPassengerId = null)
+        private async Task CheckGenderRuleAsync(int tripId, int seatNumber, int newPassengerGender, int? currentPassengerId = null)
         {
             // --- 2+1 OTOBÜS DÜZENİ MANTIĞI ---
             // Izgara: [1][2]   [3]
             //         [4][5]   [6]
-            
+
             // Eğer koltuk numarası 3'ün katıysa (3, 6, 9, 12...) -> TEKLİ KOLTUKTUR.
             // Tekli koltukta cinsiyet kuralı olmaz. Direkt çık.
             if (seatNumber % 3 == 0) return;
@@ -444,11 +470,11 @@ namespace BusBookingSystem.Application.Services.Impl
             }
             // Eğer 3'e bölümünden kalan 2 ise (2, 5, 8...) -> KORİDOR (SOL)
             // Yanındaki koltuk: Kendisi - 1
-            else 
+            else
             {
                 neighborSeatNumber = seatNumber - 1;
             }
-            
+
             var neighborTicket = await _context.Tickets
                 .Include(t => t.Passenger)
                 .Where(t => t.TripId == tripId && t.SeatNumber == neighborSeatNumber)
@@ -457,7 +483,7 @@ namespace BusBookingSystem.Application.Services.Impl
 
             if (neighborTicket != null && neighborTicket.Passenger != null)
             {
-                
+
                 // Eğer yan koltukta oturan kişi, şu an işlem yapan kişiyle AYNIYSA -> İzin Ver!
                 if (currentPassengerId.HasValue && neighborTicket.PassengerId == currentPassengerId.Value)
                 {
@@ -484,7 +510,7 @@ namespace BusBookingSystem.Application.Services.Impl
             if (existingTicket != null)
             {
                 // Sadece "Dolu Olma" durumlarını kontrol et ve engelle.
-                
+
                 bool isSold = existingTicket.IsPaid;
                 bool isActiveReservation = existingTicket.IsReserved && existingTicket.ReservationExpiresAt > DateTime.Now;
 
@@ -497,9 +523,9 @@ namespace BusBookingSystem.Application.Services.Impl
 
             // 3. Cinsiyet Kontrolü
             await CheckGenderRuleAsync(tripId, seatNumber, gender, null);
-            
+
             return true;
         }
     }
-    
+
 }

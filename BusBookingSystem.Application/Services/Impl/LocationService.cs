@@ -25,7 +25,7 @@ namespace BusBookingSystem.Application.Services.Impl
             {
                 Id = city.Id,
                 Name = city.Name,
-                Districts = city.Districts.Select(d => new DistrictDto 
+                Districts = city.Districts.Select(d => new DistrictDto
                 {
                     Id = d.Id,
                     CityId = d.CityId,
@@ -36,7 +36,6 @@ namespace BusBookingSystem.Application.Services.Impl
 
         public async Task<IEnumerable<DistrictDto>> GetDistrictsByCityIdAsync(int cityId)
         {
-            // City'nin var olup olmadığını kontrol et
             var cityExists = await _context.Cities.AnyAsync(c => c.Id == cityId);
             if (!cityExists)
             {
